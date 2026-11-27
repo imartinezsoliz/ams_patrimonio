@@ -50,3 +50,5 @@ Frontend data access goes through `src/services/api.js` (`getSites`, `getRoutes`
 At startup `src/main.js` runs `hydrateFromBackend()` (`src/services/hydrate.js`), which swaps the contents of the `mockData.js` arrays for Supabase data before mounting; views still import the mock arrays. `EscanerView` uses the real camera (`qr-scanner`), GPS and `redeemScan`. Use `npm run dev:https` to test the camera on a phone.
 
 QR links (`/q/<token>`) are captured in `main.js` by `src/services/deeplink.js`; `App.vue` then opens the scanner view, which redeems the token. Deployment is on Vercel (`vercel.json` rewrites all paths to `index.html`). Every site has a card (16 are auto-generated drafts, `cards.is_draft`); images go to the `site-images` Storage bucket via `npm run images:upload`. Details in `docs/BACKEND_SETUP.md` §5–7.
+
+Seed content is built once in `scripts/seed-data.mjs` and emitted either as `supabase/seed.sql` (`npm run seed:generate`) or loaded directly through the API (`npm run seed:apply`, handy where the Supabase CLI can't run). After changing `mockData.js` content, regenerate `seed.sql` and re-apply.

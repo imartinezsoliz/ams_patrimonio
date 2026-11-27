@@ -5,7 +5,7 @@ Everything the backend needs lives in `supabase/`:
 | Path | What |
 |---|---|
 | `supabase/migrations/*_initial_schema.sql` | Tables, enums, triggers and Row-Level Security (see `docs/SRS.md` §5) |
-| `supabase/seed.sql` | Content from `mockData.js` (22 sites, 3 routes, 6 cards, 4 fun facts, ranks). **Generated**: edit `src/data/mockData.js` or `scripts/generate-seed.mjs`, then `npm run seed:generate` |
+| `supabase/seed.sql` | Content from `mockData.js` (also loadable with `npm run seed:apply`) (22 sites, 3 routes, 6 cards, 4 fun facts, ranks). **Generated**: edit `src/data/mockData.js` or `scripts/generate-seed.mjs`, then `npm run seed:generate` |
 | `scripts/generate-qr.mjs` | Creates QR plaques and registers their hashes |
 
 ## 1. Connect your Supabase project (one time)
@@ -34,7 +34,7 @@ You do not need Docker for this; you talk directly to the hosted project.
    ```bash
    supabase db push --include-seed
    ```
-   Later, plain `supabase db push` applies only new migrations. The seed is safe to rerun: it never touches player data. (Alternative: paste `supabase/seed.sql` into the dashboard *SQL Editor*.)
+   Later, plain `supabase db push` applies only new migrations. The seed is safe to rerun: it never touches player data. Alternatives for the content (not the schema): paste `supabase/seed.sql` into the dashboard *SQL Editor*, or run `npm run seed:apply`, which loads the same content through the API using only the service role key from `.env` (no CLI or database password; migrations must already be applied). `npm run seed:apply -- --dry-run` shows what it would write. Both follow the same rules and share their data builder, `scripts/seed-data.mjs`.
 6. **Enable anonymous sign-ins** (one-time dashboard setting): dashboard → *Authentication → Sign In / Providers → Allow anonymous sign-ins*. The app relies on this so users can play without registering (FR-AUTH-1). Each new user automatically gets a `profiles` row.
 7. **Make yourself an admin:** open the app once so an anonymous profile is created (or sign up), then in the SQL Editor:
    ```sql
