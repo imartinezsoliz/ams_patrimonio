@@ -13,19 +13,29 @@ Everything the backend needs lives in `supabase/`:
 You do not need Docker for this; you talk directly to the hosted project.
 
 1. **Get the project ref:** Supabase dashboard → *Project Settings → General → Reference ID* (also the `xxxx` in `https://xxxx.supabase.co`).
-2. **Log in to the CLI:** `npx supabase login` (opens the browser).
-   - On **NixOS** the npm-downloaded binary can't run. Use `nix-shell -p supabase-cli` and call `supabase ...` instead of `npx supabase ...`.
-3. **Link the repo to the project:**
+2. **Open a shell with the CLI.**
+   - **NixOS:** the npm-downloaded binary can't run, so use the Nix package. This opens a *new shell*; type the following commands inside it, one per line:
+     ```bash
+     nix-shell -p supabase-cli
+     ```
+   - **Windows / macOS / other Linux:** nothing to open; use `npx supabase …` wherever the steps below say `supabase …`.
+3. **Authenticate.** Create an access token at <https://supabase.com/dashboard/account/tokens> and export it for this shell only:
    ```bash
-   npx supabase link --project-ref <ref>
+   export SUPABASE_ACCESS_TOKEN=<your-token>
+   ```
+   (Alternative: `supabase login`, then type the verification code from the browser at the CLI prompt and wait for "You are now logged in".)
+   **Never paste tokens or the database password into chats, issues or commits.** If one leaks, revoke it on the same tokens page.
+4. **Link the repo to the project:**
+   ```bash
+   supabase link --project-ref <ref>
    ```
    It asks for the database password you chose when creating the project (reset it under *Project Settings → Database* if forgotten).
-4. **Create the tables:**
+5. **Create the tables, functions and content:**
    ```bash
-   npx supabase db push
+   supabase db push --include-seed
    ```
-5. **Load the content.** Either `npx supabase db push --include-seed`, or paste `supabase/seed.sql` into the dashboard *SQL Editor* and run it. It is safe to run repeatedly: it never touches player data.
-6. **Enable anonymous sign-ins:** dashboard → *Authentication → Sign In / Providers → Allow anonymous sign-ins*. The app relies on this so users can play without registering (FR-AUTH-1). Each new user automatically gets a `profiles` row.
+   Later, plain `supabase db push` applies only new migrations. The seed is safe to rerun: it never touches player data. (Alternative: paste `supabase/seed.sql` into the dashboard *SQL Editor*.)
+6. **Enable anonymous sign-ins** (one-time dashboard setting): dashboard → *Authentication → Sign In / Providers → Allow anonymous sign-ins*. The app relies on this so users can play without registering (FR-AUTH-1). Each new user automatically gets a `profiles` row.
 7. **Make yourself an admin:** open the app once so an anonymous profile is created (or sign up), then in the SQL Editor:
    ```sql
    update public.profiles set role = 'superadmin' where user_id = '<your auth.users id>';
@@ -57,13 +67,15 @@ Output goes to `qr-output/` (git-ignored): `<site>.png`, `<site>.svg`, `codes.cs
 - A site can have only one active QR (enforced by the database). `--rotate` revokes the old one first.
 - **Set `QR_BASE_URL` to the final domain before printing.** It is embedded in every code.
 
-## Contract for `redeem_scan` (not implemented yet)
+## Redeeming a scan: `redeem_scan`
 
-The server function that will redeem a scan must:
-1. Compute `sha256(token)` of the `/q/<token>` path segment and look it up in `qr_codes` (`active`, `valid_from`/`expires_at`).
-2. Check the Haversine distance between the reported position and `sites.lat/lng` against `sites.radius_m`.
-3. In one transaction: insert into `scans`, insert into `user_cards` (the card whose `site_id` matches), and add `sites.points` to `profiles.points`.
-4. Use the **service role** (clients have no write access to `scans`, `user_cards` or `profiles.points`), and log failures in `scans.result`.
+Implemented in `supabase/migrations/20261127000100_redeem_scan.sql` as a Postgres function, called from the client with `supabase.rpc('redeem_scan', { p_token, p_lat, p_lng, p_accuracy })` (the frontend wrapper is `redeemScan` in `src/services/api.js`). The user is always `auth.uid()`; anonymous sessions work.
+
+It checks, in order: rate limit (10 attempts/user/minute) → token exists (`sha256` lookup) → active → within `valid_from`/`expires_at` → location provided → distance ≤ `sites.radius_m` + GPS accuracy (forgiven up to 50 m) → not already redeemed by this user. On success it logs the scan, unlocks the site's card (if it has one) and adds `sites.points`, atomically.
+
+It never raises for normal failures; it returns `{ "result": "<code>" }` and logs the attempt in `scans`. Result codes: `success`, `already_owned`, `invalid_token`, `revoked_token`, `expired_token`, `no_location`, `too_far` (also returns `distance_m`, `radius_m`), `rate_limited`. On `success` it also returns `site`, `points_earned`, `total_points`, `rank_name`, `rank_changed`, `distance_m` and `card` (null if the site has no card).
+
+Not implemented yet: offline scan queue (`scanned_at`), impossible-travel flagging.
 
 ## Notes and known limits
 

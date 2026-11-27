@@ -44,3 +44,5 @@ The project has no test runner, linter or formatter.
 ## Backend (Supabase)
 
 Schema, RLS and seed live in `supabase/`; `supabase/seed.sql` is generated from `mockData.js` (`npm run seed:generate`), so don't edit it by hand. `scripts/generate-qr.mjs` (`npm run qr:generate`) creates QR plaques. Setup steps and the `redeem_scan` contract are in `docs/BACKEND_SETUP.md`. Copy `.env.example` to `.env`; the service role key must never reach the frontend. On NixOS, run the Supabase CLI via `nix-shell -p supabase-cli`.
+
+Frontend data access goes through `src/services/api.js` (`getSites`, `getRoutes`, `getCards`, `getProfile`, `redeemScan`, `extractToken`), which keeps the views' existing Spanish-keyed shapes and falls back to `mockData.js` when `VITE_SUPABASE_*` is not set. Scan rewards are decided only by the `redeem_scan` database function.
