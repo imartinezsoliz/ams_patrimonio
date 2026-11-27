@@ -23,3 +23,12 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 *.local
+
+# Generated QR plaques (contain plaintext tokens)
+qr-output/
+
+# Vercel
+.vercel
+
+# Local photo originals (uploaded to Supabase Storage with npm run images:upload)
+images/
