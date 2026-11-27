@@ -10,7 +10,8 @@
     "seed:generate": "node scripts/generate-seed.mjs",
     "qr:generate": "node scripts/generate-qr.mjs",
     "dev:https": "vite --mode https",
-    "images:upload": "node scripts/upload-images.mjs"
+    "images:upload": "node scripts/upload-images.mjs",
+    "seed:apply": "node scripts/seed-via-api.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",
