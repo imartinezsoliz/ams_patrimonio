@@ -7,7 +7,7 @@ export const USER_INITIAL_STATE = {
   nombre: "Explorador Chuquisaqueño",
   puntos: 150,
   rango: "Explorador Novato",
-  totalCartas: 15,
+  totalCartas: 10,
   cartasDesbloqueadasIds: ["casa-de-la-libertad"],
   ubicacionActual: {
     nombre: "Plaza 25 de Mayo (Centro)",
@@ -75,7 +75,7 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "museum",
     puntos: 150,
     rareza: "Épica",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuAvDj7w00yuM6MrDp97o1RJk3Mev-xafLPRrBCsbvd-r6RRGJ3LlEG0mckzysZghIWg3EQebTfv5nIrp54Z4gfs-_VMW_1RIR1UhbztwnC7roeNcqiE4Com0yqP3WeopfUDPfohexYXOF3p6E569UbYjI0o-u3gLnnTwvx-pUT0aD1EL55Obw5jtJCuidQDmFUUb1CUtGZiIhVNfW2-rZNBfvhibVENreAlNlDyIFA",
+    imagen: "/cartas/casa_de_la%20_libertad.jpeg",
     descripcion: "Cuna de la patria boliviana. En su histórico Salón Virreinal se firmó el Acta de la Independencia en 1825 y alberga la galería de cuadros de los presidentes.",
     coordenadas: { lat: -19.0479, lng: -65.2596 },
     topPercent: "38%",
@@ -126,7 +126,7 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "diversity_3",
     puntos: 120,
     rareza: "Rara",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuA8muneXTSFIpSCVXoZKiuwDAYtpITENkStBmwdYeakpacSt8YXbOJ21B2_mhZ52jOKOZXWm0d9SCnKpaKh1ht-pTz34EztkHhmm3uEzddjFveLzpk9qXSZ_LxUlTuQtQuSdssavih3pTGX-g5yhY_LfwCHW9WBEYqThKUZ3onMElACKlaPggFitNTlDUxqrA2VcJyiix2fky0bLLfLnwSUMV5nDRCUYLB2J_LdPSk",
+    imagen: "/cartas/etmografia.jpeg",
     descripcion: "Instalado en una señorial casona virreinal, custodia máscaras ceremoniales bolivianas, plumería sagrada, cerámica precolombina y numismática.",
     coordenadas: { lat: -19.0488, lng: -65.2605 },
     topPercent: "52%",
@@ -177,7 +177,7 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "landscape",
     puntos: 120,
     rareza: "Rara",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuDUA6whty5OmehKlWp2Tw95O6ncPDGdhnNJSP87-KfXOvdjxl6D5YTBBrpBCet048n5c4Z5_Vbo4GrvKXoxleq2wiqGdKthALv0XWtxwl9vRciffuzm7V_6ibwyFOorI3SqFEKRA0JsbeSHaPCXFrZ2TSlIOepNp0SsjnQ2Wi3KsTujQ5ITECdRwyNjGCY0ROuvRhom_r5chTjopGPd8HZbEA78US4U0BWtnoAMR4g",
+    imagen: "/cartas/Recoleta.png",
     descripcion: "Convento franciscano de 1601 con claustros de naranjos centenarios, sillería tallada en cedro y una terraza panorámica con mirador a la ciudad.",
     coordenadas: { lat: -19.0531, lng: -65.2528 },
     topPercent: "24%",
@@ -531,6 +531,7 @@ export const MONUMENTOS_MOCK = [
 
 /**
  * Catálogo de Cartas Coleccionables
+ * Vinculado directamente con las fotografías locales de /public/cartas/ y sus códigos QR.
  */
 export const CARTAS_MOCK = [
   {
@@ -544,8 +545,79 @@ export const CARTAS_MOCK = [
     puntosGanados: 150,
     pista: "Plaza 25 de Mayo · Salón de la Independencia",
     iconoPista: "verified",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuAvDj7w00yuM6MrDp97o1RJk3Mev-xafLPRrBCsbvd-r6RRGJ3LlEG0mckzysZghIWg3EQebTfv5nIrp54Z4gfs-_VMW_1RIR1UhbztwnC7roeNcqiE4Com0yqP3WeopfUDPfohexYXOF3p6E569UbYjI0o-u3gLnnTwvx-pUT0aD1EL55Obw5jtJCuidQDmFUUb1CUtGZiIhVNfW2-rZNBfvhibVENreAlNlDyIFA",
+    qrCodigo: "RUTA-BLANCA-CDL-1825",
+    imagen: "/cartas/casa_de_la%20_libertad.jpeg",
     historiaCorta: "El templo cívico más sagrado de Bolivia. En su imponente Salón Virreinal resonaron las voces que declararon la libertad americana y alberga la histórica galería presidencial."
+  },
+  {
+    id: "la-recoleta",
+    titulo: "La Recoleta",
+    categoria: "colonial",
+    categoriaLabel: "Panorámica",
+    rareza: "Rara",
+    desbloqueada: false,
+    puntosGanados: 120,
+    pista: "Escanear en plaza del mirador",
+    iconoPista: "qr_code",
+    qrCodigo: "RUTA-BLANCA-REC-1601",
+    imagen: "/cartas/Recoleta.png",
+    historiaCorta: "Convento franciscano fundado en 1601 en el sitio donde nació la Villa de La Plata. Su mirador regala un atardecer colonial inigualable."
+  },
+  {
+    id: "museo-colonial-charcas",
+    titulo: "Museo Colonial Charcas",
+    categoria: "colonial",
+    categoriaLabel: "Colonial",
+    rareza: "Épica",
+    desbloqueada: false,
+    puntosGanados: 130,
+    pista: "Museo Universitario · Calle Bolívar",
+    iconoPista: "museum",
+    qrCodigo: "RUTA-BLANCA-CHARCAS-1939",
+    imagen: "/cartas/charcas.jpeg",
+    historiaCorta: "Museo Universitario Colonial Charcas de la USFX. Custodia valiosas colecciones de arte virreinal, pinacoteca colonial, platería y piezas republicanas."
+  },
+  {
+    id: "palacete-guereo",
+    titulo: "Palacete del Guereo",
+    categoria: "presidencial",
+    categoriaLabel: "Colonial",
+    rareza: "Épica",
+    desbloqueada: false,
+    puntosGanados: 120,
+    pista: "Ruta Colonial · Zona El Guereo",
+    iconoPista: "domain",
+    qrCodigo: "RUTA-BLANCA-GUEREO-1895",
+    imagen: "/cartas/palacete.jpeg",
+    historiaCorta: "Emblemática casona señorial chuquisaqueña con elegantes galerías, arcos de transición colonial-republicana y jardines históricos."
+  },
+  {
+    id: "musef-etnografia-1",
+    titulo: "MUSEF · Arte Etnográfico",
+    categoria: "mistica",
+    categoriaLabel: "Etnográfico",
+    rareza: "Rara",
+    desbloqueada: false,
+    puntosGanados: 120,
+    pista: "Calle España Nº 74 · Sala Principal",
+    iconoPista: "diversity_3",
+    qrCodigo: "RUTA-BLANCA-MUSEF-1",
+    imagen: "/cartas/etmografia.jpeg",
+    historiaCorta: "Museo Nacional de Etnografía y Folklore (MUSEF). Resguarda máscaras rituales, vestimentas ceremoniales y la memoria viva de las culturas bolivianas."
+  },
+  {
+    id: "musef-etnografia-2",
+    titulo: "MUSEF · Tradición Viva",
+    categoria: "colonial",
+    categoriaLabel: "Etnográfico",
+    rareza: "Rara",
+    desbloqueada: false,
+    puntosGanados: 120,
+    pista: "Calle España Nº 74 · Galería Textil",
+    iconoPista: "palette",
+    qrCodigo: "RUTA-BLANCA-MUSEF-2",
+    imagen: "/cartas/etnografia2.jpeg",
+    historiaCorta: "Segunda reliquia del Museo de Etnografía y Folklore, dedicada a los tejidos ancestrales, cerámica ritual y expresiones folklóricas de Chuquisaca."
   },
   {
     id: "cementerio-general",
@@ -557,21 +629,9 @@ export const CARTAS_MOCK = [
     puntosGanados: 120,
     pista: "Visita los mausoleos presidenciales",
     iconoPista: "location_on",
+    qrCodigo: "RUTA-BLANCA-CEM-1892",
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuAhPaU2WUwsQ4lk5xEhglxgPqdGA3RKFf5foN06xZyXDiQLV0ILgsseml0ZDAc9rbwjQKhu5bWmdZazseSJwdvQNVbxuIAkJNTci0hXx-N4oDHdkbO42yx1mRaFjO9G9VQ5UK8OvNFQOt6HsORRdonvcKH0ubYf8_Hqr4Ro1TndeMInfEt6WG-QS5xIQLxrGe-zrs7l8dVzojBA160ej5qqRa5hxbCt8uduZXI2Afo",
     historiaCorta: "Custodio de presidentes, príncipes y poetas. Sus senderos arbolados guardan los secretos más profundos y los sepulcros de líderes de la República."
-  },
-  {
-    id: "la-recoleta",
-    titulo: "La Recoleta",
-    categoria: "colonial",
-    categoriaLabel: "Panorámica",
-    rareza: "Rara",
-    desbloqueada: false,
-    puntosGanados: 100,
-    pista: "Escanear en plaza del mirador",
-    iconoPista: "qr_code",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuDUA6whty5OmehKlWp2Tw95O6ncPDGdhnNJSP87-KfXOvdjxl6D5YTBBrpBCet048n5c4Z5_Vbo4GrvKXoxleq2wiqGdKthALv0XWtxwl9vRciffuzm7V_6ibwyFOorI3SqFEKRA0JsbeSHaPCXFrZ2TSlIOepNp0SsjnQ2Wi3KsTujQ5ITECdRwyNjGCY0ROuvRhom_r5chTjopGPd8HZbEA78US4U0BWtnoAMR4g",
-    historiaCorta: "Construido en el sitio exacto donde se fundó la Villa de La Plata en 1538. Su mirador regala un atardecer colonial inigualable."
   },
   {
     id: "castillo-glorieta",
@@ -583,6 +643,7 @@ export const CARTAS_MOCK = [
     puntosGanados: 200,
     pista: "Ruta de los Príncipes",
     iconoPista: "explore",
+    qrCodigo: "RUTA-BLANCA-GLORIETA-1898",
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuB4zd-nmKZzG9xa98LJUg1z342tmUMwZEmJe1D4AcCYGOarmCo_hjRo6Q3AXhSXZOlZ6ZE3DA9Lin0QLluJ-93qZunZfVxOq5I7Z1lx_klw893OcBJJ6doTZkcUK_QBHbnfEjVwC_tIRgP1Ks1-IM8fhTflauOsvObSRKM-siyVlFQ40lYFLQIL9SmmOruLculrEHSxhXIfrwTXFwjPAJ58QH5L3jrtEl9W0rcM3ug",
     historiaCorta: "Único principado de Bolivia otorgado por el Papa León XIII. Combina arquitectura gótica, bizantina, árabe y renacentista."
   },
@@ -596,6 +657,7 @@ export const CARTAS_MOCK = [
     puntosGanados: 100,
     pista: "Torre de la Catedral",
     iconoPista: "church",
+    qrCodigo: "RUTA-BLANCA-CAT-1559",
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuDj0qwOSE1Va28E5Hrx2kNZA9hr3TP1NkdaWrxEg8MjiOehQYd2EzPL2xin5pZMUVUFnQQNeKLE0beZC1Dwe7Qbb6yAkSW1iAwY_IUXT0aXhO1Rdi_UGqSQYRqlO6OdfSzJXw2EDJf020n7E9Zl1J_6ogBp62osOXeAJRAvLay4dSvXteE_9X-SAQ44NJ6YEbOBHfgsk6AYoh6_zk3NzfJbntM-v9-6oEf0-fVqHus",
     historiaCorta: "Su torre campanario alberga relojes históricos y joyas religiosas invaluables como la Virgen de Guadalupe engarzada en perlas y rubíes."
   },
@@ -609,6 +671,7 @@ export const CARTAS_MOCK = [
     puntosGanados: 150,
     pista: "Acantilado Cal Orck'o",
     iconoPista: "pets",
+    qrCodigo: "RUTA-BLANCA-DINO-68M",
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuCjpFCmwe14ldYgNVQEWbeqE4JhpZX2HGQf8EI8SWZWCyr3Tat0F1V8RCmzvrPnyh7f-ZoJKxEYK-HR91iPYW2AciHQspz6AtQsqgdzrU9WruH_UhKqRvPBfwTMy1fNJFYBiuxkC7PL_EHV-J7i1xzvt5iiFtum8bm_G-JCwnOlDrCDoSFhvYiLAIpY_8G_LV8DJHJxRF44x4bp_MZlPMgkxs7GYAFwCn4gEXACwKc",
     historiaCorta: "El yacimiento de huellas de dinosaurio más grande del planeta. Un viaje geológico de 68 millones de años en el corazón de Chuquisaca."
   }

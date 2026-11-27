@@ -12,6 +12,10 @@ const props = defineProps({
     type: Object,
     required: true
   },
+  cartas: {
+    type: Array,
+    default: () => []
+  },
   museoInicial: {
     type: Object,
     default: null

@@ -1,104 +1,285 @@
 <script setup>
 /**
  * EscanerView.vue
- * Vista inmersiva a pantalla completa (h-screen / 100dvh) para el escáner de códigos QR.
- * Diseñada para búsqueda física de placas patrimoniales en Sucre.
- * Incluye HUD táctico Chuquisaqueño, láser animado, control de linterna y preparado para cámara web/móvil.
+ * Vista inmersiva a pantalla completa (100dvh) con acceso real a la cámara trasera del dispositivo
+ * mediante WebRTC (getUserMedia) y decodificación de códigos QR en tiempo real con jsQR.
+ * Incluye control real de linterna (torch), entrada manual de respaldo y visor de QRs de prueba.
  */
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import jsQR from 'jsqr'
 
-// App.vue pasa `usuario` a todas las vistas; se declara para que no se renderice como atributo HTML
-defineProps({
+const props = defineProps({
   usuario: {
     type: Object,
     default: null
+  },
+  cartas: {
+    type: Array,
+    required: true
   }
 })
 
-const emit = defineEmits(['navigate', 'scan-success'])
+const emit = defineEmits(['navigate', 'scan-success', 'open-qr-generator'])
 
-// Estado reactivo de la linterna y drawer de ayuda
+// Referencias DOM para cámara y procesamiento de frames
+const videoRef = ref(null)
+const canvasRef = ref(null)
+
+// Estados de cámara y escaneo
+const estadoCamara = ref('solicitando') // 'solicitando' | 'activa' | 'error'
+const mensajeErrorCamara = ref('')
 const linternaEncendida = ref(false)
+const linternaDisponible = ref(false)
 const mostrarTips = ref(false)
-const confianzaDeteccion = ref(78)
-const escaneando = ref(true)
+const mostrarManual = ref(false)
+const codigoManual = ref('')
+const feedbackEscaneo = ref('')
+const ultimoCodigoLeido = ref('')
 
-// Alternar linterna (Flashlight Toggle con simulación visual / Web MediaStream track)
-const toggleLinterna = () => {
-  linternaEncendida.value = !linternaEncendida.value
+let mediaStream = null
+let videoTrack = null
+let rafId = null
+let bloqueadoTemporalmente = false
+
+// Buscar carta coincidente por código QR o ID (acepta texto directo o URL /q/<token>)
+const buscarCartaPorQR = (textoCrudo) => {
+  if (!textoCrudo) return null
+  const limpio = textoCrudo.trim()
+  let token = limpio
+
+  if (limpio.startsWith('http://') || limpio.startsWith('https://')) {
+    try {
+      const url = new URL(limpio)
+      const qParam = url.searchParams.get('code') || url.searchParams.get('q')
+      if (qParam) {
+        token = qParam
+      } else {
+        const partes = url.pathname.split('/').filter(Boolean)
+        if (partes.length) token = partes[partes.length - 1]
+      }
+    } catch {
+      // mantener limpio
+    }
+  }
+
+  return props.cartas.find(
+    (c) =>
+      c.qrCodigo?.toLowerCase() === token.toLowerCase() ||
+      c.id.toLowerCase() === token.toLowerCase()
+  ) || null
 }
 
-// Simular detección exitosa de un QR para pruebas instantáneas
-const simularEscaneoExitoso = () => {
-  emit('scan-success', {
-    id: 'casa-de-la-libertad',
-    codigo: 'RUTA-BLANCA-CDL-1825',
-    nombre: 'Casa de la Libertad',
-    puntos: 150
-  })
+// Procesar texto decodificado de un QR
+const manejarQRDetectado = (texto) => {
+  if (bloqueadoTemporalmente || !texto) return
+  ultimoCodigoLeido.value = texto
+
+  const carta = buscarCartaPorQR(texto)
+  if (carta) {
+    bloqueadoTemporalmente = true
+    if ('vibrate' in navigator) {
+      navigator.vibrate(120)
+    }
+    detenerCamara()
+    emit('scan-success', {
+      id: carta.id,
+      codigo: carta.qrCodigo,
+      nombre: carta.titulo,
+      puntos: carta.puntosGanados,
+      imagen: carta.imagen
+    })
+  } else {
+    bloqueadoTemporalmente = true
+    feedbackEscaneo.value = `QR "${texto.slice(0, 28)}" no pertenece a La Ruta Blanca.`
+    setTimeout(() => {
+      bloqueadoTemporalmente = false
+      feedbackEscaneo.value = ''
+    }, 2500)
+  }
 }
 
-// Cerrar y regresar al mapa
+// Bucle de lectura de frames con jsQR
+const escanearFrame = () => {
+  if (estadoCamara.value !== 'activa') return
+
+  const video = videoRef.value
+  const canvas = canvasRef.value
+
+  if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
+    const width = video.videoWidth
+    const height = video.videoHeight
+    if (width > 0 && height > 0) {
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      ctx.drawImage(video, 0, 0, width, height)
+      const imageData = ctx.getImageData(0, 0, width, height)
+      const code = jsQR(imageData.data, width, height, {
+        inversionAttempts: 'attemptBoth'
+      })
+
+      if (code && code.data) {
+        manejarQRDetectado(code.data)
+      }
+    }
+  }
+
+  rafId = requestAnimationFrame(escanearFrame)
+}
+
+const iniciarCamara = async () => {
+  estadoCamara.value = 'solicitando'
+  mensajeErrorCamara.value = ''
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    estadoCamara.value = 'error'
+    mensajeErrorCamara.value = 'Tu navegador requiere HTTPS (o localhost) para acceder a la cámara.'
+    return
+  }
+
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    })
+
+    if (videoRef.value) {
+      videoRef.value.srcObject = mediaStream
+      await videoRef.value.play()
+    }
+
+    const tracks = mediaStream.getVideoTracks()
+    if (tracks.length > 0) {
+      videoTrack = tracks[0]
+      const capabilities = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {}
+      linternaDisponible.value = Boolean(capabilities.torch)
+    }
+
+    estadoCamara.value = 'activa'
+    rafId = requestAnimationFrame(escanearFrame)
+  } catch (err) {
+    estadoCamara.value = 'error'
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      mensajeErrorCamara.value = 'Permiso de cámara denegado. Habilítalo en tu navegador o ingresa el código manualmente.'
+    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      mensajeErrorCamara.value = 'No se detectó una cámara disponible en este dispositivo.'
+    } else {
+      mensajeErrorCamara.value = 'No se pudo iniciar la cámara. Puedes usar el ingreso manual o simular un QR.'
+    }
+  }
+}
+
+const detenerCamara = () => {
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  if (mediaStream) {
+    mediaStream.getTracks().forEach((track) => track.stop())
+    mediaStream = null
+    videoTrack = null
+  }
+}
+
+const toggleLinterna = async () => {
+  const nuevoEstado = !linternaEncendida.value
+  if (videoTrack && linternaDisponible.value) {
+    try {
+      await videoTrack.applyConstraints({
+        advanced: [{ torch: nuevoEstado }]
+      })
+      linternaEncendida.value = nuevoEstado
+    } catch (err) {
+      console.warn('No se pudo activar la linterna:', err)
+    }
+  } else {
+    linternaEncendida.value = nuevoEstado
+  }
+}
+
+const enviarCodigoManual = () => {
+  if (!codigoManual.value.trim()) return
+  manejarQRDetectado(codigoManual.value.trim())
+}
+
 const cerrarEscaner = () => {
-  emit('navigate', 'mapa')
+  detenerCamara()
+  emit('navigate', 'explorar')
 }
+
+onMounted(() => {
+  iniciarCamara()
+})
+
+onUnmounted(() => {
+  detenerCamara()
+})
 </script>
 
 <template>
   <div 
-    class="relative w-full h-[100dvh] min-h-[580px] bg-inverse-surface flex flex-col justify-between overflow-hidden select-none p-4 pb-safe pt-safe"
+    class="relative w-full h-[100dvh] min-h-[580px] bg-inverse-surface flex flex-col justify-between overflow-hidden select-none p-4 pb-24 pt-safe"
     role="region"
     aria-label="Visor inmersivo de la cámara para escanear QR"
   >
-    <!-- Fondo de Cámara Simulado (Fotografía arquitectónica de Sucre en alta definición) -->
+    <!-- Stream de Cámara Real -->
+    <video
+      ref="videoRef"
+      autoplay
+      playsinline
+      muted
+      class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+      :class="estadoCamara === 'activa' ? 'opacity-100' : 'opacity-0'"
+    ></video>
+
+    <!-- Canvas oculto para decodificar frames QR con jsQR -->
+    <canvas ref="canvasRef" class="hidden" aria-hidden="true"></canvas>
+
+    <!-- Fondo arquitectónico fallback si la cámara está cargando o no disponible -->
     <div 
-      class="absolute inset-0 bg-cover bg-center opacity-85 scale-105 transform transition-transform duration-700 pointer-events-none"
+      v-if="estadoCamara !== 'activa'"
+      class="absolute inset-0 bg-cover bg-center opacity-50 pointer-events-none"
       style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDu9jef_O-oR4wxg-eJGAHom05SCMl5juKyLto2stvlyRSgTzN1vBavjdvVBT9ShwvTiZz2nTUaPidIQPOJRo7IHA8MWRoNGKDX112Rr8mIowcOWvCJpHFdIogFsvpaop93_4q7nWNfy4BSMaUFpsTpjxkLJ8Kfo5ltqmuuT2qiEhzDDw2p5wq3V3eFW8SAjcbrmbYt_tMz8UVBruUysaFg52pMOvEmcK-4IP3rYMA');"
       aria-hidden="true"
     ></div>
 
-    <!-- Filtro de Viñeta y Lente Suave -->
-    <div class="absolute inset-0 bg-gradient-to-b from-inverse-surface/90 via-transparent to-inverse-surface/95 pointer-events-none"></div>
+    <!-- Viñeta sutil para legibilidad del HUD -->
+    <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/80 pointer-events-none"></div>
 
-    <!-- Partículas y Malla de Cámara Táctica HUD -->
-    <svg class="absolute inset-0 w-full h-full pointer-events-none opacity-20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <defs>
-        <pattern id="scannerGrid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <circle cx="20" cy="20" r="1" fill="#FFFFFF" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#scannerGrid)" />
-    </svg>
-
-    <!-- BARRA SUPERIOR HUD: Botón Volver, Píldora Instructiva y Linterna -->
+    <!-- BARRA SUPERIOR HUD: Volver, Estado y Linterna -->
     <div class="relative z-20 w-full max-w-md mx-auto flex items-center justify-between gap-2 pt-2">
-      <!-- Botón Volver / Cerrar -->
       <button
         type="button"
         @click="cerrarEscaner"
-        class="w-10 h-10 rounded-full bg-inverse-surface/80 backdrop-blur-md flex items-center justify-center text-inverse-on-surface hover:bg-inverse-surface active:scale-95 transition-all shadow-md focus-visible:ring-2 focus-visible:ring-primary-container"
-        aria-label="Cerrar escáner y volver al mapa"
+        class="w-10 h-10 rounded-full bg-black/55 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/75 active:scale-95 transition-all shadow-md focus-visible:ring-2 focus-visible:ring-crimson"
+        aria-label="Cerrar escáner y volver"
       >
         <span class="material-symbols-outlined text-[20px]" aria-hidden="true">arrow_back</span>
       </button>
 
-      <!-- Píldora Guía con Resplandor Táctico -->
-      <div class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-full bg-inverse-surface/85 backdrop-blur-xl border border-white/10 shadow-lg">
-        <span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse shrink-0" aria-hidden="true"></span>
-        <span class="text-xs font-bold text-inverse-on-surface truncate text-center">
-          Busca el código QR de La Ruta Blanca
+      <div class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-full bg-black/60 backdrop-blur-xl border border-white/15 shadow-lg">
+        <span
+          class="w-2 h-2 rounded-full shrink-0"
+          :class="estadoCamara === 'activa' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-pulse'"
+          aria-hidden="true"
+        ></span>
+        <span class="text-xs font-bold text-white truncate text-center">
+          {{ estadoCamara === 'activa' ? 'Apunta al código QR del museo' : estadoCamara === 'solicitando' ? 'Iniciando cámara…' : 'Cámara no disponible' }}
         </span>
       </div>
 
-      <!-- Botón de Linterna / Flash -->
       <button
         type="button"
         @click="toggleLinterna"
-        class="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-md active:scale-90 focus-visible:ring-2 focus-visible:ring-primary-container"
+        class="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-md active:scale-90 focus-visible:ring-2 focus-visible:ring-crimson"
         :class="[
           linternaEncendida 
-            ? 'bg-primary-container text-on-primary ring-2 ring-primary-container/40' 
-            : 'bg-inverse-surface/80 backdrop-blur-md text-inverse-on-surface'
+            ? 'bg-crimson text-white ring-2 ring-crimson/50' 
+            : 'bg-black/55 backdrop-blur-md text-white'
         ]"
         :aria-label="linternaEncendida ? 'Apagar linterna' : 'Encender linterna'"
       >
@@ -108,142 +289,161 @@ const cerrarEscaner = () => {
       </button>
     </div>
 
-    <!-- RETÍCULA CENTRAL Y MARCO HUD DE ESCANEO -->
-    <div class="relative z-10 w-64 h-64 mx-auto my-auto flex items-center justify-center">
-      <!-- Resplandor exterior pulsante -->
-      <div class="absolute -inset-4 rounded-2xl opacity-40 animate-pulse bg-primary-container/15 pointer-events-none" aria-hidden="true"></div>
-
-      <!-- 4 Esquineros Estilizados (HUD Chuquisaqueño) -->
-      <!-- Esquina Superior Izquierda -->
-      <div class="absolute top-0 left-0 w-8 h-8 flex flex-col justify-start items-start pointer-events-none" aria-hidden="true">
-        <div class="w-8 h-1.5 bg-primary-container rounded-t"></div>
-        <div class="w-1.5 h-6 bg-primary-container rounded-bl"></div>
-      </div>
-      <!-- Esquina Superior Derecha -->
-      <div class="absolute top-0 right-0 w-8 h-8 flex flex-col justify-start items-end pointer-events-none" aria-hidden="true">
-        <div class="w-8 h-1.5 bg-primary-container rounded-t"></div>
-        <div class="w-1.5 h-6 bg-primary-container rounded-br"></div>
-      </div>
-      <!-- Esquina Inferior Izquierda -->
-      <div class="absolute bottom-0 left-0 w-8 h-8 flex flex-col justify-end items-start pointer-events-none" aria-hidden="true">
-        <div class="w-1.5 h-6 bg-primary-container rounded-tl"></div>
-        <div class="w-8 h-1.5 bg-primary-container rounded-b"></div>
-      </div>
-      <!-- Esquina Inferior Derecha -->
-      <div class="absolute bottom-0 right-0 w-8 h-8 flex flex-col justify-end items-end pointer-events-none" aria-hidden="true">
-        <div class="w-1.5 h-6 bg-primary-container rounded-tr"></div>
-        <div class="w-8 h-1.5 bg-primary-container rounded-b"></div>
-      </div>
-
-      <!-- Cruz Táctica Central (Homenaje a la Cruz de San Andrés de Chuquisaca) -->
-      <div class="w-6 h-6 relative opacity-75 pointer-events-none" aria-hidden="true">
-        <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-on-primary -translate-y-1/2"></div>
-        <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-on-primary -translate-x-1/2"></div>
+    <!-- RETÍCULA CENTRAL DE ESCANEO QR -->
+    <div class="relative z-10 w-64 h-64 mx-auto my-auto flex flex-col items-center justify-center">
+      <!-- Estado de Error / Sin Cámara -->
+      <div
+        v-if="estadoCamara === 'error'"
+        class="w-full p-4 rounded-2xl bg-black/80 backdrop-blur-xl border border-white/15 text-center flex flex-col items-center gap-2.5 shadow-2xl"
+      >
+        <span class="material-symbols-outlined text-amber-400 text-[34px]" aria-hidden="true">no_photography</span>
+        <p class="text-xs text-white/90 leading-relaxed">{{ mensajeErrorCamara }}</p>
+        <div class="flex gap-2 w-full pt-1">
+          <button
+            type="button"
+            @click="iniciarCamara"
+            class="flex-1 py-2 px-3 rounded-xl bg-white/15 text-white text-[11px] font-bold hover:bg-white/25 transition-colors"
+          >
+            Reintentar
+          </button>
+          <button
+            type="button"
+            @click="mostrarManual = true"
+            class="flex-1 py-2 px-3 rounded-xl bg-crimson text-white text-[11px] font-bold hover:bg-red-700 transition-colors"
+          >
+            Código Manual
+          </button>
+        </div>
       </div>
 
-      <!-- Línea Láser Animada -->
-      <div 
-        class="absolute left-2 right-2 h-1 bg-gradient-to-r from-transparent via-secondary-container to-transparent shadow-[0_0_12px_#FD5B66] rounded-full animate-laser pointer-events-none"
-        aria-hidden="true"
-      ></div>
+      <!-- Visor Activo con Esquineros y Láser -->
+      <template v-else>
+        <div class="absolute -inset-3 rounded-2xl opacity-30 animate-pulse bg-crimson/10 pointer-events-none" aria-hidden="true"></div>
 
-      <!-- Coordenadas Geográficas de Sucre en las Esquinas -->
-      <span class="absolute top-2 left-3 text-[10px] text-on-primary/60 tracking-widest font-mono pointer-events-none">
-        19°02'S
-      </span>
-      <span class="absolute bottom-2 right-3 text-[10px] text-on-primary/60 tracking-widest font-mono pointer-events-none">
-        65°15'W
-      </span>
+        <!-- 4 Esquineros Carmesí -->
+        <div class="absolute top-0 left-0 w-8 h-8 flex flex-col justify-start items-start pointer-events-none" aria-hidden="true">
+          <div class="w-8 h-1.5 bg-crimson rounded-t"></div>
+          <div class="w-1.5 h-6 bg-crimson rounded-bl"></div>
+        </div>
+        <div class="absolute top-0 right-0 w-8 h-8 flex flex-col justify-start items-end pointer-events-none" aria-hidden="true">
+          <div class="w-8 h-1.5 bg-crimson rounded-t"></div>
+          <div class="w-1.5 h-6 bg-crimson rounded-br"></div>
+        </div>
+        <div class="absolute bottom-0 left-0 w-8 h-8 flex flex-col justify-end items-start pointer-events-none" aria-hidden="true">
+          <div class="w-1.5 h-6 bg-crimson rounded-tl"></div>
+          <div class="w-8 h-1.5 bg-crimson rounded-b"></div>
+        </div>
+        <div class="absolute bottom-0 right-0 w-8 h-8 flex flex-col justify-end items-end pointer-events-none" aria-hidden="true">
+          <div class="w-1.5 h-6 bg-crimson rounded-tr"></div>
+          <div class="w-8 h-1.5 bg-crimson rounded-b"></div>
+        </div>
+
+        <!-- Cruz Central -->
+        <div class="w-6 h-6 relative opacity-75 pointer-events-none" aria-hidden="true">
+          <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-white -translate-y-1/2"></div>
+          <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-white -translate-x-1/2"></div>
+        </div>
+
+        <!-- Línea Láser Animada -->
+        <div 
+          class="absolute left-2 right-2 h-1 bg-gradient-to-r from-transparent via-secondary-container to-transparent shadow-[0_0_12px_#FD5B66] rounded-full animate-laser pointer-events-none"
+          aria-hidden="true"
+        ></div>
+
+        <span class="absolute top-2 left-3 text-[10px] text-white/60 tracking-widest font-mono pointer-events-none">19°02'S</span>
+        <span class="absolute bottom-2 right-3 text-[10px] text-white/60 tracking-widest font-mono pointer-events-none">65°15'W</span>
+      </template>
     </div>
 
-    <!-- HUD INFERIOR: Chip de Detección de Patrimonio y Controles -->
-    <div class="relative z-20 w-full max-w-md mx-auto flex flex-col items-center gap-3 pb-2">
-      <!-- Tarjeta Chip de Monumento en Foco -->
-      <div 
-        @click="simularEscaneoExitoso"
-        class="w-full px-4 py-2.5 rounded-2xl bg-inverse-surface/90 backdrop-blur-xl border border-white/10 flex items-center justify-between shadow-xl cursor-pointer hover:bg-inverse-surface transition-colors"
-        title="Clic para simular escaneo de esta placa"
+    <!-- Alerta si el QR no es de La Ruta Blanca -->
+    <div
+      v-if="feedbackEscaneo"
+      class="relative z-30 w-full max-w-md mx-auto mb-2 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold text-center shadow-lg"
+      role="alert"
+    >
+      {{ feedbackEscaneo }}
+    </div>
+
+    <!-- HUD INFERIOR: Controles, Entrada Manual y QRs de Prueba -->
+    <div class="relative z-20 w-full max-w-md mx-auto flex flex-col items-center gap-2.5">
+      <!-- Panel Opcional de Ingreso Manual -->
+      <form
+        v-if="mostrarManual"
+        @submit.prevent="enviarCodigoManual"
+        class="w-full p-2.5 rounded-2xl bg-black/80 backdrop-blur-xl border border-white/15 flex items-center gap-2 shadow-xl"
       >
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-8 h-8 rounded-xl bg-primary-container flex items-center justify-center shrink-0 shadow-xs">
-            <span class="material-symbols-outlined text-on-primary text-[18px]" aria-hidden="true">account_balance</span>
-          </div>
-          <div class="flex flex-col min-w-0">
-            <span class="text-[10px] text-on-primary-container uppercase tracking-wider font-extrabold">
-              Patrimonio en foco
-            </span>
-            <span class="text-sm font-bold text-inverse-on-surface truncate">
-              Casa de la Libertad
-            </span>
-          </div>
-        </div>
+        <input
+          v-model="codigoManual"
+          type="text"
+          placeholder="Ej: RUTA-BLANCA-REC-1601"
+          class="flex-1 bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-crimson"
+        />
+        <button
+          type="submit"
+          class="px-3.5 py-2 rounded-xl bg-crimson text-white text-xs font-bold shrink-0 active:scale-95 transition-transform"
+        >
+          Validar
+        </button>
+      </form>
 
-        <!-- Indicador de Confianza del Reconocimiento -->
-        <div class="flex flex-col items-end shrink-0 pl-2">
-          <span class="text-[11px] text-secondary-container font-mono font-bold tabular-nums">
-            {{ confianzaDeteccion }}%
-          </span>
-          <div class="w-12 h-1.5 rounded-full bg-tertiary-container overflow-hidden mt-0.5">
-            <div 
-              class="h-full bg-secondary-container rounded-full transition-all duration-300"
-              :style="{ width: `${confianzaDeteccion}%` }"
-            ></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Fila de Acciones: Cerrar y ¿Dónde buscar? -->
-      <div class="w-full flex items-center justify-center gap-3 mt-1">
+      <!-- Fila de Acciones -->
+      <div class="w-full flex items-center justify-center gap-2">
         <button
           type="button"
-          @click="cerrarEscaner"
-          class="px-5 py-2.5 rounded-full bg-inverse-surface/80 backdrop-blur-md text-inverse-on-surface flex items-center gap-2 text-xs font-bold active:scale-95 transition-all shadow-md hover:bg-inverse-surface focus-visible:ring-2 focus-visible:ring-primary-container"
+          @click="mostrarManual = !mostrarManual"
+          class="px-3.5 py-2.5 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white flex items-center gap-1.5 text-xs font-bold active:scale-95 transition-all shadow-md"
         >
-          <span class="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
-          <span>Cerrar</span>
+          <span class="material-symbols-outlined text-[16px]" aria-hidden="true">keyboard</span>
+          <span>Código</span>
+        </button>
+
+        <button
+          type="button"
+          @click="emit('open-qr-generator')"
+          class="px-4 py-2.5 rounded-full bg-crimson text-white flex items-center gap-1.5 text-xs font-bold active:scale-95 transition-all shadow-lg"
+        >
+          <span class="material-symbols-outlined text-[16px]" aria-hidden="true">qr_code_2</span>
+          <span>QRs de prueba</span>
         </button>
 
         <button
           type="button"
           @click="mostrarTips = !mostrarTips"
-          class="px-4 py-2.5 rounded-full bg-primary-container text-on-primary flex items-center gap-1.5 text-xs font-bold active:scale-95 transition-all shadow-lg hover:bg-primary focus-visible:ring-2 focus-visible:ring-primary-container"
+          class="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white flex items-center justify-center active:scale-95 transition-all shadow-md"
           :aria-expanded="mostrarTips"
-          aria-controls="tipDrawer"
+          aria-label="¿Dónde buscar el código QR?"
         >
           <span class="material-symbols-outlined text-[18px]" aria-hidden="true">lightbulb</span>
-          <span>¿Dónde buscar?</span>
         </button>
       </div>
     </div>
 
-    <!-- Modal / Drawer Emergente de Consejos de Búsqueda -->
+    <!-- Drawer de Ayuda -->
     <div 
       v-if="mostrarTips"
       id="tipDrawer"
-      class="relative z-30 w-full max-w-md mx-auto p-4 rounded-2xl bg-surface-container-high/95 backdrop-blur-xl border border-surface-container shadow-2xl text-on-surface transition-all duration-300"
+      class="relative z-30 w-full max-w-md mx-auto mt-2 p-3.5 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl text-navy"
       role="region"
       aria-label="Consejo para encontrar la placa de La Ruta Blanca"
     >
       <div class="flex items-start gap-3">
-        <div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+        <div class="w-8 h-8 rounded-full bg-crimson text-white flex items-center justify-center shrink-0">
           <span class="material-symbols-outlined text-[18px]" aria-hidden="true">place</span>
         </div>
-
         <div class="flex-1 flex flex-col">
           <div class="flex items-center justify-between">
-            <h3 class="text-sm font-extrabold text-primary">Placa Oficial de Chuquisaca</h3>
+            <h3 class="text-xs font-extrabold text-crimson">Placa Oficial de Chuquisaca</h3>
             <button 
               type="button"
               @click="mostrarTips = false"
-              class="text-on-surface-variant hover:text-on-surface focus-visible:ring-2 focus-visible:ring-primary-container rounded"
+              class="text-gray-400 hover:text-navy"
               aria-label="Cerrar consejo"
             >
               <span class="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
             </button>
           </div>
-
-          <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
-            Busca las placas de bronce con el sello carmesí de <strong class="text-on-surface font-semibold">La Ruta Blanca</strong> ubicadas en el zaguán de ingreso o en los dinteles de la puerta principal.
+          <p class="text-[11px] text-gray-600 mt-1 leading-relaxed">
+            Busca las placas con el sello carmesí de <strong>La Ruta Blanca</strong> en los museos, o abre <strong>"QRs de prueba"</strong> para generar y escanear los códigos vinculados a tus cartas.
           </p>
         </div>
       </div>

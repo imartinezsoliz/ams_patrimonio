@@ -2,27 +2,97 @@
 /**
  * App.vue
  * Layout contenedor principal de la aplicación móvil PWA "La Ruta Blanca" (Sucre, Bolivia).
- * Orquesta las 4 vistas mediante renderizado dinámico <component :is="...">:
- * - ExplorarView (Pantalla principal sin mapa, con Sabías que, Rutas y Museos Sueltos)
- * - MapaView (Pestaña dedicada exclusivamente al mapa con ubicación de museos)
- * - EscanerView (Visor inmersivo h-screen para códigos QR)
- * - ColeccionView (Catálogo de cartas patrimoniales)
+ * Orquesta las 4 vistas mediante renderizado dinámico <component :is="...">,
+ * gestiona el estado reactivo persistente en localStorage (cartas desbloqueadas y puntos),
+ * la revelación inmediata tras escanear un QR y el generador de QRs de prueba.
  */
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import HeaderNav from './components/HeaderNav.vue'
 import BottomNav from './components/BottomNav.vue'
+import CardDetailModal from './components/CardDetailModal.vue'
+import QrGeneradorModal from './components/QrGeneradorModal.vue'
 import ExplorarView from './views/ExplorarView.vue'
 import MapaView from './views/MapaView.vue'
 import EscanerView from './views/EscanerView.vue'
 import ColeccionView from './views/ColeccionView.vue'
 import { USER_INITIAL_STATE, CARTAS_MOCK, MONUMENTOS_MOCK, MUSEOS_SUELTOS_MOCK } from './data/mockData.js'
 
-const usuario = ref({ ...USER_INITIAL_STATE })
+const STORAGE_KEY = 'ruta_blanca_progreso_v1'
 
-// Vista inicial: Pantalla principal Explorar (sin mapa)
+// Cargar progreso guardado en localStorage o inicializar con estado base
+const cargarProgresoInicial = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (parsed && Array.isArray(parsed.desbloqueadas)) {
+        return parsed
+      }
+    }
+  } catch (e) {
+    console.warn('No se pudo leer localStorage:', e)
+  }
+  return {
+    puntos: USER_INITIAL_STATE.puntos,
+    desbloqueadas: CARTAS_MOCK.filter(c => c.desbloqueada).map(c => ({
+      id: c.id,
+      fechaObtencion: c.fechaObtencion
+    }))
+  }
+}
+
+const progresoGuardado = cargarProgresoInicial()
+
+// Estado reactivo de cartas vinculado a mockData + localStorage
+const cartas = ref(
+  CARTAS_MOCK.map((c) => {
+    const hallada = progresoGuardado.desbloqueadas.find((d) => d.id === c.id)
+    return {
+      ...c,
+      desbloqueada: Boolean(hallada),
+      fechaObtencion: hallada ? hallada.fechaObtencion : undefined
+    }
+  })
+)
+
+// Calcular rango dinámicamente según puntos
+const calcularRango = (pts) => {
+  if (pts >= 600) return 'Guardián del Patrimonio'
+  if (pts >= 350) return 'Cronista de La Plata'
+  return 'Explorador Novato'
+}
+
+const usuario = ref({
+  ...USER_INITIAL_STATE,
+  puntos: progresoGuardado.puntos,
+  rango: calcularRango(progresoGuardado.puntos)
+})
+
+// Guardar automáticamente en localStorage cuando cambie el progreso
+const guardarProgreso = () => {
+  try {
+    const payload = {
+      puntos: usuario.value.puntos,
+      desbloqueadas: cartas.value
+        .filter((c) => c.desbloqueada)
+        .map((c) => ({ id: c.id, fechaObtencion: c.fechaObtencion || 'Hallado hoy' }))
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+  } catch (e) {
+    console.warn('No se pudo guardar en localStorage:', e)
+  }
+}
+
+watch(
+  () => [usuario.value.puntos, cartas.value.map((c) => c.desbloqueada)],
+  () => guardarProgreso(),
+  { deep: true }
+)
+
+// Vista actual reactiva: 'explorar' | 'mapa' | 'escaner' | 'coleccion'
 const vistaActual = ref('explorar')
 
-// Museo enfocado al abrir la pestaña Mapa desde Explorar o Rutas
+// Museo enfocado al abrir la pestaña Mapa
 const museoEnMapa = ref(MONUMENTOS_MOCK[0])
 
 const vistas = {
@@ -36,7 +106,15 @@ const vistaComponente = computed(() => {
   return vistas[vistaActual.value] || ExplorarView
 })
 
-// Notificación emergente / Toast para recompensas
+// Modal de revelación inmediata de Carta Desbloqueada al escanear QR
+const cartaRevelada = ref(null)
+const modalRevelacionAbierto = ref(false)
+const cartaYaObtenida = ref(false)
+
+// Modal generador de códigos QR
+const modalQrAbierto = ref(false)
+
+// Notificación emergente / Toast
 const toastMensaje = ref('')
 const toastVisible = ref(false)
 
@@ -50,8 +128,8 @@ const mostrarNotificacion = (mensaje) => {
 
 const onLocateMuseum = (item) => {
   const encontrado =
-    MUSEOS_SUELTOS_MOCK.find(m => m.id === item.id) ||
-    MONUMENTOS_MOCK.find(m => m.id === item.id) || {
+    MUSEOS_SUELTOS_MOCK.find((m) => m.id === item.id) ||
+    MONUMENTOS_MOCK.find((m) => m.id === item.id) || {
       ...item,
       topPercent: item.topPercent || '45%',
       leftPercent: item.leftPercent || '48%'
@@ -59,21 +137,67 @@ const onLocateMuseum = (item) => {
   museoEnMapa.value = encontrado
 }
 
+/**
+ * Procesa un escaneo QR válido:
+ * Desbloquea la carta, suma puntos, guarda en localStorage y muestra la carta ganada.
+ */
 const onScanSuccess = (datosQR) => {
-  usuario.value.puntos += datosQR.puntos || 150
+  const carta = cartas.value.find(
+    (c) => c.id === datosQR.id || c.qrCodigo === datosQR.codigo
+  )
 
-  const carta = CARTAS_MOCK.find(c => c.id === datosQR.id)
-  if (carta && !carta.desbloqueada) {
-    carta.desbloqueada = true
-    carta.fechaObtencion = 'Hallado hoy'
-    mostrarNotificacion(`¡Reliquia descubierta: ${carta.titulo}! +${datosQR.puntos} PTS`)
-  } else {
-    mostrarNotificacion(`¡Patrimonio verificado: ${datosQR.nombre}! +${datosQR.puntos} PTS`)
+  if (!carta) {
+    mostrarNotificacion('Código QR no reconocido en el catálogo.')
+    return
   }
 
-  setTimeout(() => {
-    vistaActual.value = 'coleccion'
-  }, 1000)
+  if (!carta.desbloqueada) {
+    const hoy = new Date()
+    const fechaFormateada = `Hallado hoy ${hoy.getDate()}/${hoy.getMonth() + 1}`
+    carta.desbloqueada = true
+    carta.fechaObtencion = fechaFormateada
+    usuario.value.puntos += carta.puntosGanados
+    usuario.value.rango = calcularRango(usuario.value.puntos)
+    cartaYaObtenida.value = false
+    mostrarNotificacion(`¡Reliquia desbloqueada: ${carta.titulo}! +${carta.puntosGanados} PTS`)
+  } else {
+    cartaYaObtenida.value = true
+    mostrarNotificacion(`Ya posees la carta: ${carta.titulo}`)
+  }
+
+  cartaRevelada.value = carta
+  modalRevelacionAbierto.value = true
+}
+
+// Simular escaneo directamente desde el modal de QRs de prueba
+const simularEscaneoDesdeModal = (qrCodigo) => {
+  const carta = cartas.value.find((c) => c.qrCodigo === qrCodigo)
+  if (!carta) return
+  modalQrAbierto.value = false
+  onScanSuccess({
+    id: carta.id,
+    codigo: carta.qrCodigo,
+    nombre: carta.titulo,
+    puntos: carta.puntosGanados
+  })
+}
+
+// Reiniciar colección para volver a probar el escaneo desde 0
+const reiniciarProgreso = () => {
+  cartas.value = CARTAS_MOCK.map((c) => ({
+    ...c,
+    desbloqueada: false,
+    fechaObtencion: undefined
+  }))
+  usuario.value.puntos = 0
+  usuario.value.rango = calcularRango(0)
+  guardarProgreso()
+  mostrarNotificacion('Progreso reiniciado: 0 cartas desbloqueadas.')
+}
+
+const irAMisCartasTrasDesbloqueo = () => {
+  modalRevelacionAbierto.value = false
+  cambiarVista('coleccion')
 }
 
 const cambiarVista = (nuevaVista) => {
@@ -108,10 +232,12 @@ const cambiarVista = (nuevaVista) => {
           <component 
             :is="vistaComponente"
             :usuario="usuario"
+            :cartas="cartas"
             :museo-inicial="museoEnMapa"
             @navigate="cambiarVista"
             @locate-museum="onLocateMuseum"
             @scan-success="onScanSuccess"
+            @open-qr-generator="modalQrAbierto = true"
           />
         </Transition>
       </main>
@@ -120,6 +246,25 @@ const cambiarVista = (nuevaVista) => {
       <BottomNav 
         :current-view="vistaActual" 
         @update:current-view="cambiarVista"
+      />
+
+      <!-- Modal Celebratorio de Carta Desbloqueada tras Escaneo -->
+      <CardDetailModal
+        :carta="cartaRevelada"
+        :is-open="modalRevelacionAbierto"
+        :es-desbloqueo="true"
+        :ya-obtenida="cartaYaObtenida"
+        @close="irAMisCartasTrasDesbloqueo"
+        @go-collection="irAMisCartasTrasDesbloqueo"
+      />
+
+      <!-- Generador de Códigos QR de Prueba -->
+      <QrGeneradorModal
+        :cartas="cartas"
+        :is-open="modalQrAbierto"
+        @close="modalQrAbierto = false"
+        @simulate-scan="simularEscaneoDesdeModal"
+        @reset-progress="reiniciarProgreso"
       />
 
       <!-- Toast de Notificaciones y Recompensas -->

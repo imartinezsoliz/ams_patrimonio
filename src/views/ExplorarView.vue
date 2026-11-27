@@ -16,6 +16,10 @@ defineProps({
   usuario: {
     type: Object,
     required: true
+  },
+  cartas: {
+    type: Array,
+    default: () => []
   }
 })
 
