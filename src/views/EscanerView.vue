@@ -3,9 +3,13 @@
  * EscanerView.vue
  * Vista inmersiva a pantalla completa (h-screen / 100dvh) para el escáner de códigos QR.
  * Diseñada para búsqueda física de placas patrimoniales en Sucre.
- * Incluye HUD táctico Chuquisaqueño, láser animado, control de linterna y preparado para cámara web/móvil.
+ * Incluye HUD táctico Chuquisaqueño, láser animado, cámara real (qr-scanner), linterna,
+ * ingreso manual del código y canje en el servidor (redeem_scan vía services/api.js).
+ * Sin VITE_SUPABASE_* (modo demo) se conserva el escaneo simulado.
  */
-import { ref } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { extractToken, redeemScan, MENSAJES_ESCANEO } from '../services/api.js'
+import { isSupabaseConfigured } from '../lib/supabase.js'
 
 // App.vue pasa `usuario` a todas las vistas; se declara para que no se renderice como atributo HTML
 defineProps({
@@ -23,9 +27,145 @@ const mostrarTips = ref(false)
 const confianzaDeteccion = ref(78)
 const escaneando = ref(true)
 
-// Alternar linterna (Flashlight Toggle con simulación visual / Web MediaStream track)
-const toggleLinterna = () => {
-  linternaEncendida.value = !linternaEncendida.value
+// --- Cámara real ---------------------------------------------------------------
+const videoEl = ref(null)
+const camaraActiva = ref(false)
+const linternaDisponible = ref(false)
+let scanner = null
+let desmontado = false
+
+// --- Estado del canje ----------------------------------------------------------
+const procesando = ref(false)
+const mensaje = ref('')
+const mensajeTipo = ref('info') // 'info' | 'error'
+const mostrarManual = ref(false)
+const codigoManual = ref('')
+let ultimoToken = ''
+let ultimoTokenAt = 0
+
+const setMensaje = (texto, tipo = 'info') => {
+  mensaje.value = texto
+  mensajeTipo.value = tipo
+}
+
+// Linterna: solo si la cámara la soporta (en iOS Safari normalmente no)
+const toggleLinterna = async () => {
+  if (!scanner || !linternaDisponible.value) return
+  try {
+    await scanner.toggleFlash()
+    linternaEncendida.value = scanner.isFlashOn()
+  } catch {
+    linternaEncendida.value = false
+  }
+}
+
+const iniciarCamara = async () => {
+  try {
+    const { default: QrScanner } = await import('qr-scanner')
+    if (!(await QrScanner.hasCamera())) {
+      setMensaje('No se encontró una cámara. Ingresa el código manualmente.', 'error')
+      mostrarManual.value = true
+      return
+    }
+    const instancia = new QrScanner(videoEl.value, (resultado) => procesarTexto(resultado.data), {
+      preferredCamera: 'environment',
+      maxScansPerSecond: 5,
+      highlightScanRegion: false,
+      highlightCodeOutline: false,
+      returnDetailedScanResult: true
+    })
+    await instancia.start()
+    if (desmontado) {
+      instancia.destroy()
+      return
+    }
+    scanner = instancia
+    camaraActiva.value = true
+    linternaDisponible.value = await scanner.hasFlash()
+  } catch {
+    setMensaje('No pudimos acceder a la cámara. Revisa los permisos o ingresa el código manualmente.', 'error')
+    mostrarManual.value = true
+  }
+}
+
+// Detener la cámara al salir de la app y retomarla al volver
+const onVisibilidad = () => {
+  if (!scanner) return
+  if (document.hidden) scanner.stop()
+  else scanner.start().catch(() => {})
+}
+
+onMounted(() => {
+  document.addEventListener('visibilitychange', onVisibilidad)
+  iniciarCamara()
+})
+
+onBeforeUnmount(() => {
+  desmontado = true
+  document.removeEventListener('visibilitychange', onVisibilidad)
+  scanner?.destroy()
+  scanner = null
+})
+
+// Posición actual para validar que el usuario está en el lugar (si la niega, el servidor responde no_location)
+const obtenerPosicion = () =>
+  new Promise((resolve) => {
+    if (!('geolocation' in navigator)) return resolve({})
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+      () => resolve({}),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
+    )
+  })
+
+/** Recibe el texto leído por la cámara o escrito a mano: URL `/q/<token>` o el token suelto. */
+const procesarTexto = async (texto) => {
+  if (procesando.value) return
+  if (!isSupabaseConfigured) {
+    setMensaje('Modo demo: configura .env para validar códigos reales.', 'info')
+    return
+  }
+  const token = extractToken(texto)
+  if (!token) {
+    setMensaje('Este código no pertenece a La Ruta Blanca.', 'error')
+    return
+  }
+  // La cámara lee el mismo QR varias veces por segundo: ignora repeticiones inmediatas
+  const ahora = Date.now()
+  if (token === ultimoToken && ahora - ultimoTokenAt < 4000) return
+  ultimoToken = token
+  ultimoTokenAt = ahora
+
+  procesando.value = true
+  setMensaje('Validando código…')
+  try {
+    const res = await redeemScan(token, await obtenerPosicion())
+    if (res.result === 'success') {
+      setMensaje('')
+      emit('scan-success', {
+        id: res.card?.id ?? res.site.id,
+        nombre: res.site.name,
+        puntos: res.points_earned
+      })
+    } else if (res.result === 'already_owned') {
+      setMensaje(`Ya descubriste ${res.site?.name ?? 'este lugar'}.`)
+    } else if (res.result === 'too_far') {
+      setMensaje(`Estás a ${res.distance_m} m. Acércate a menos de ${res.radius_m} m de la placa.`, 'error')
+    } else {
+      setMensaje(MENSAJES_ESCANEO[res.result] ?? 'No se pudo validar el código.', 'error')
+    }
+  } catch {
+    setMensaje('No pudimos validar el código. Revisa tu conexión e inténtalo de nuevo.', 'error')
+  } finally {
+    procesando.value = false
+  }
+}
+
+const enviarCodigoManual = () => {
+  const texto = codigoManual.value
+  if (!texto.trim()) return
+  ultimoToken = '' // permite reintentar el mismo código a mano
+  procesarTexto(texto)
 }
 
 // Simular detección exitosa de un QR para pruebas instantáneas
@@ -56,6 +196,16 @@ const cerrarEscaner = () => {
       style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDu9jef_O-oR4wxg-eJGAHom05SCMl5juKyLto2stvlyRSgTzN1vBavjdvVBT9ShwvTiZz2nTUaPidIQPOJRo7IHA8MWRoNGKDX112Rr8mIowcOWvCJpHFdIogFsvpaop93_4q7nWNfy4BSMaUFpsTpjxkLJ8Kfo5ltqmuuT2qiEhzDDw2p5wq3V3eFW8SAjcbrmbYt_tMz8UVBruUysaFg52pMOvEmcK-4IP3rYMA');"
       aria-hidden="true"
     ></div>
+
+    <!-- Cámara real (qr-scanner); mientras no esté activa se ve la imagen de fondo -->
+    <video
+      ref="videoEl"
+      class="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-500"
+      :class="camaraActiva ? 'opacity-100' : 'opacity-0'"
+      muted
+      playsinline
+      aria-hidden="true"
+    ></video>
 
     <!-- Filtro de Viñeta y Lente Suave -->
     <div class="absolute inset-0 bg-gradient-to-b from-inverse-surface/90 via-transparent to-inverse-surface/95 pointer-events-none"></div>
@@ -94,8 +244,10 @@ const cerrarEscaner = () => {
       <button
         type="button"
         @click="toggleLinterna"
+        :disabled="!linternaDisponible"
         class="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-md active:scale-90 focus-visible:ring-2 focus-visible:ring-primary-container"
         :class="[
+          !linternaDisponible && isSupabaseConfigured ? 'invisible' : '',
           linternaEncendida 
             ? 'bg-primary-container text-on-primary ring-2 ring-primary-container/40' 
             : 'bg-inverse-surface/80 backdrop-blur-md text-inverse-on-surface'
@@ -158,8 +310,48 @@ const cerrarEscaner = () => {
 
     <!-- HUD INFERIOR: Chip de Detección de Patrimonio y Controles -->
     <div class="relative z-20 w-full max-w-md mx-auto flex flex-col items-center gap-3 pb-2">
-      <!-- Tarjeta Chip de Monumento en Foco -->
+      <!-- Estado del canje (accesible) -->
+      <p
+        v-if="mensaje"
+        class="w-full px-4 py-2.5 rounded-2xl text-xs font-bold text-center backdrop-blur-xl border shadow-xl"
+        :class="mensajeTipo === 'error'
+          ? 'bg-error-container/95 text-error border-error/30'
+          : 'bg-inverse-surface/90 text-inverse-on-surface border-white/10'"
+        role="status"
+        aria-live="polite"
+      >
+        {{ mensaje }}
+      </p>
+
+      <!-- Ingreso manual del código (sin cámara o placa ilegible) -->
+      <form
+        v-if="mostrarManual"
+        class="w-full flex items-center gap-2 p-2 rounded-2xl bg-inverse-surface/90 backdrop-blur-xl border border-white/10 shadow-xl"
+        @submit.prevent="enviarCodigoManual"
+      >
+        <input
+          v-model="codigoManual"
+          type="text"
+          inputmode="url"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="Pega el enlace o código de la placa…"
+          aria-label="Código o enlace de la placa QR"
+          class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-white/10 text-inverse-on-surface placeholder:text-inverse-on-surface/50 text-sm focus-visible:ring-2 focus-visible:ring-primary-container outline-none"
+        />
+        <button
+          type="submit"
+          :disabled="procesando || !codigoManual.trim()"
+          class="px-4 py-2 rounded-xl bg-primary-container text-on-primary text-xs font-bold disabled:opacity-50 active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-primary-container"
+        >
+          Validar
+        </button>
+      </form>
+
+      <!-- Tarjeta Chip de Monumento en Foco (solo modo demo: escaneo simulado) -->
       <div 
+        v-if="!isSupabaseConfigured"
         @click="simularEscaneoExitoso"
         class="w-full px-4 py-2.5 rounded-2xl bg-inverse-surface/90 backdrop-blur-xl border border-white/10 flex items-center justify-between shadow-xl cursor-pointer hover:bg-inverse-surface transition-colors"
         title="Clic para simular escaneo de esta placa"
@@ -201,6 +393,16 @@ const cerrarEscaner = () => {
         >
           <span class="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
           <span>Cerrar</span>
+        </button>
+
+        <button
+          type="button"
+          @click="mostrarManual = !mostrarManual"
+          class="px-4 py-2.5 rounded-full bg-inverse-surface/80 backdrop-blur-md text-inverse-on-surface flex items-center gap-1.5 text-xs font-bold active:scale-95 transition-all shadow-md hover:bg-inverse-surface focus-visible:ring-2 focus-visible:ring-primary-container"
+          :aria-expanded="mostrarManual"
+        >
+          <span class="material-symbols-outlined text-[18px]" aria-hidden="true">keyboard</span>
+          <span>Código</span>
         </button>
 
         <button
