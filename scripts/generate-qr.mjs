@@ -18,7 +18,7 @@
  *                               (fixed once plaques are printed!)
  */
 import { createHash, randomBytes } from 'node:crypto'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 import QRCode from 'qrcode'
@@ -74,7 +74,15 @@ if (dryRun) {
 }
 
 mkdirSync(args.out, { recursive: true })
-const csv = ['site_id,site_name,url']
+// codes.csv accumulates across runs: rotating one site must not drop the others' links
+// (tokens cannot be recovered from the database).
+const csvPath = join(args.out, 'codes.csv')
+const csvRows = new Map()
+if (existsSync(csvPath)) {
+  for (const line of readFileSync(csvPath, 'utf8').split('\n').slice(1)) {
+    if (line.trim()) csvRows.set(line.slice(0, line.indexOf(',')), line)
+  }
+}
 let created = 0
 
 for (const site of sites) {
@@ -114,10 +122,13 @@ for (const site of sites) {
   const opts = { errorCorrectionLevel: 'H', margin: 4 }
   await QRCode.toFile(join(args.out, `${site.id}.png`), url, { ...opts, width: 1024 })
   writeFileSync(join(args.out, `${site.id}.svg`), await QRCode.toString(url, { ...opts, type: 'svg' }))
-  csv.push(`${site.id},"${site.name.replace(/"/g, '""')}",${url}`)
+  csvRows.set(site.id, `${site.id},"${site.name.replace(/"/g, '""')}",${url}`)
   created++
   console.log(`created ${site.id}${dryRun ? ' (dry run, not registered)' : ''}`)
 }
 
-if (created > 0) writeFileSync(join(args.out, 'codes.csv'), csv.join('\n') + '\n')
+if (created > 0) {
+  const lines = [...csvRows.keys()].sort().map((id) => csvRows.get(id))
+  writeFileSync(csvPath, ['site_id,site_name,url', ...lines].join('\n') + '\n')
+}
 console.log(`\n${created} QR code(s) written to ${args.out}/ — keep this folder private.`)
