@@ -5,7 +5,7 @@ Everything the backend needs lives in `supabase/`:
 | Path | What |
 |---|---|
 | `supabase/migrations/*_initial_schema.sql` | Tables, enums, triggers and Row-Level Security (see `docs/SRS.md` §5) |
-| `supabase/seed.sql` | Content from `mockData.js` (22 sites, 3 routes, 6 cards, ranks). **Generated**: edit `src/data/mockData.js` or `scripts/generate-seed.mjs`, then `npm run seed:generate` |
+| `supabase/seed.sql` | Content from `mockData.js` (22 sites, 3 routes, 6 cards, 4 fun facts, ranks). **Generated**: edit `src/data/mockData.js` or `scripts/generate-seed.mjs`, then `npm run seed:generate` |
 | `scripts/generate-qr.mjs` | Creates QR plaques and registers their hashes |
 
 ## 1. Connect your Supabase project (one time)
@@ -77,10 +77,30 @@ It never raises for normal failures; it returns `{ "result": "<code>" }` and log
 
 Not implemented yet: offline scan queue (`scanned_at`), impossible-travel flagging.
 
+## 4. How the frontend uses the backend
+
+- **Loading data:** `src/main.js` calls `hydrateFromBackend()` (`src/services/hydrate.js`) before mounting. It loads sites, routes, cards, fun facts and the profile from Supabase and replaces the *contents* of the arrays in `mockData.js`, so views need no changes. If `.env` is missing, Supabase is unreachable, or loading takes more than 5 s, the app keeps the demo data. Everything is replaced at once or not at all. This is a temporary bridge: when the team adopts Pinia/composables, delete `hydrate.js` and call `src/services/api.js` from the views.
+- **Scanning:** `EscanerView.vue` reads the camera with `qr-scanner` (lazy-loaded), takes the GPS position, extracts the token from `…/q/<token>` and calls `redeemScan`. `App.vue` is unchanged: on `success` the view emits the same `scan-success` event as before, with the server's result. The "Código" button opens a manual entry field (no camera, damaged plaque).
+- **Demo mode** (no `.env`): the simulated scan chip still works and real scans show "Modo demo".
+
+### Testing the real flow on one machine
+1. Do steps 1–2 above, then `npm run qr:generate -- --site casa-de-la-libertad`.
+2. `npm run dev`, open the app, go to Scanner → **Código**, paste the URL from `qr-output/codes.csv`.
+3. The server checks your GPS against the site (default radius 100 m). A desktop browser rarely reports an exact location, so for local testing temporarily widen it in the SQL Editor, and restore it afterwards:
+   ```sql
+   update public.sites set radius_m = 100000 where id = 'casa-de-la-libertad';  -- testing only
+   update public.sites set radius_m = 100 where id = 'casa-de-la-libertad';
+   ```
+4. To scan with a phone camera, the dev server needs https: run `npm run dev:https` (self-signed certificate; accept the browser warning) and open the *Network* URL it prints.
+5. Replay a scan: `delete from public.scans where site_id = '…' and user_id = '…'` and `delete from public.user_cards …` (or use a new browser profile, which creates a new anonymous user).
+
 ## Notes and known limits
 
 - **Data merging:** duplicate ids in `mockData.js` were merged into one site each: `casa-de-la-libertad-presidentes`, `museo-etnografico-musef`, `cementerio-tumbas-presidenciales` and `castillo-glorieta` map onto `casa-de-la-libertad`, `musef`, `cementerio-general` and `castillo-de-la-glorieta`. Frontend code that uses the old ids will need updating. `museo-catedral` vs `catedral-metropolitana` and `museo-la-recoleta` vs `la-recoleta` are different places and stay separate.
 - **Ranks** (Novato 0 / Explorador 300 / Guardián 800 / Cronista 1500) are placeholders.
 - **Images** are still the hot-linked URLs in `image_url`; move them to Supabase Storage later.
+- `sites.kind` is `museo` for the 12 standalone museums (shown in Explorar/Mapa) and `parada` for route-only stops. `map_top_pct`/`map_left_pct` position pins on the current static map image and are temporary (drop them when the Leaflet map lands).
+- `fun_facts.gradient` holds Tailwind classes; Tailwind only generates classes it finds in `src/`, so a *new* gradient written in the database won't render until the same classes appear in source (or are safelisted).
+- `ColeccionView` still hard-codes "/15" and the per-category totals; with 6 cards in the database the counters will look off until the card list is completed or those numbers come from data.
 - Only 6 of 22 sites have a card; the others still award points but have no collectible yet.
 - Locked cards are publicly readable (the UI shows silhouettes with hints), so their image and history are not secret.

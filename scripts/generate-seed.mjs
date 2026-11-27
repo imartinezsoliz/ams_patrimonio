@@ -13,7 +13,8 @@ import {
   MUSEOS_SUELTOS_MOCK,
   RUTAS_MOCK,
   MONUMENTOS_MOCK,
-  CARTAS_MOCK
+  CARTAS_MOCK,
+  DATOS_CURIOSOS_MOCK
 } from '../src/data/mockData.js'
 
 const ID_ALIASES = {
@@ -22,6 +23,7 @@ const ID_ALIASES = {
   'cementerio-tumbas-presidenciales': 'cementerio-general',
   'castillo-glorieta': 'castillo-de-la-glorieta'
 }
+const pct = (v) => (v == null ? null : parseFloat(v))
 const canon = (id) => ID_ALIASES[id] ?? id
 
 // Placeholder thresholds: confirm names/values with the team.
@@ -53,7 +55,10 @@ for (const m of MUSEOS_SUELTOS_MOCK) {
     points: m.puntos,
     rarity: m.rareza,
     icon: m.icono,
-    image: m.imagen
+    image: m.imagen,
+    kind: 'museo',
+    top: pct(m.topPercent),
+    left: pct(m.leftPercent)
   })
 }
 
@@ -65,6 +70,8 @@ for (const s of [...stops, ...MONUMENTOS_MOCK]) {
     // Fill gaps only; museum data wins.
     existing.image ??= s.imagen
     existing.description ??= s.descripcion ?? s.detalle
+    existing.top ??= pct(s.topPercent)
+    existing.left ??= pct(s.leftPercent)
     continue
   }
   sites.set(id, {
@@ -79,7 +86,10 @@ for (const s of [...stops, ...MONUMENTOS_MOCK]) {
     points: s.puntos ?? 100,
     rarity: s.rareza ?? 'Común',
     icon: s.icono,
-    image: s.imagen ?? null
+    image: s.imagen ?? null,
+    kind: 'parada',
+    top: pct(s.topPercent),
+    left: pct(s.leftPercent)
   })
 }
 
@@ -109,13 +119,13 @@ out.push(
 )
 out.push('')
 
-out.push('insert into public.sites (id, name, category, address, description, hours, lat, lng, points, rarity, icon, image_url) values')
+out.push('insert into public.sites (id, name, category, address, description, hours, lat, lng, points, rarity, icon, image_url, kind, map_top_pct, map_left_pct) values')
 out.push(
   rows(
     [...sites.values()].map((s) => [
       str(s.id), str(s.name), str(s.category), str(s.address), str(s.description),
       str(s.hours), num(s.lat), num(s.lng), num(s.points), `${str(s.rarity)}::public.rarity`,
-      str(s.icon), str(s.image)
+      str(s.icon), str(s.image), str(s.kind), num(s.top), num(s.left)
     ])
   )
 )
@@ -123,7 +133,8 @@ out.push(`on conflict (id) do update set
   name = excluded.name, category = excluded.category, address = excluded.address,
   description = excluded.description, hours = excluded.hours, lat = excluded.lat,
   lng = excluded.lng, points = excluded.points, rarity = excluded.rarity,
-  icon = excluded.icon, image_url = excluded.image_url;`)
+  icon = excluded.icon, image_url = excluded.image_url, kind = excluded.kind,
+  map_top_pct = excluded.map_top_pct, map_left_pct = excluded.map_left_pct;`)
 out.push('')
 
 out.push('insert into public.routes (id, title, description, category, distance_km, est_minutes, difficulty, icon, image_url, badge_text, badge_type) values')
@@ -173,8 +184,24 @@ on conflict (id) do update set
 )
 out.push('')
 
+out.push('insert into public.fun_facts (id, position, badge, icon, text_prefix, text_highlight, text_suffix, location, gradient) values')
+out.push(
+  rows(
+    DATOS_CURIOSOS_MOCK.map((d, i) => [
+      str(d.id), i + 1, str(d.badge), str(d.icono), str(d.textoPrefix),
+      str(d.textoDestacado), str(d.textoSuffix), str(d.ubicacion), str(d.gradiente)
+    ])
+  ) +
+    `
+on conflict (id) do update set
+  position = excluded.position, badge = excluded.badge, icon = excluded.icon,
+  text_prefix = excluded.text_prefix, text_highlight = excluded.text_highlight,
+  text_suffix = excluded.text_suffix, location = excluded.location, gradient = excluded.gradient;`
+)
+out.push('')
+
 const target = fileURLToPath(new URL('../supabase/seed.sql', import.meta.url))
 writeFileSync(target, out.join('\n'))
 console.log(
-  `seed.sql: ${sites.size} sites, ${RUTAS_MOCK.length} routes, ${stops.length} stops, ${cards.length} cards`
+  `seed.sql: ${sites.size} sites, ${RUTAS_MOCK.length} routes, ${stops.length} stops, ${cards.length} cards, ${DATOS_CURIOSOS_MOCK.length} fun facts`
 )

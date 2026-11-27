@@ -14,8 +14,25 @@ import {
   USER_INITIAL_STATE,
   MUSEOS_SUELTOS_MOCK,
   RUTAS_MOCK,
-  CARTAS_MOCK
+  CARTAS_MOCK,
+  DATOS_CURIOSOS_MOCK
 } from '../data/mockData.js'
+
+export const isBackendConfigured = isSupabaseConfigured
+
+// Plaza 25 de Mayo: referencia para el texto "X m del centro".
+const CENTRO = USER_INITIAL_STATE.ubicacionActual
+
+const distanciaMetros = (a, b) => {
+  const rad = Math.PI / 180
+  const h =
+    Math.sin(((b.lat - a.lat) * rad) / 2) ** 2 +
+    Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(((b.lng - a.lng) * rad) / 2) ** 2
+  return 2 * 6371000 * Math.asin(Math.sqrt(h))
+}
+
+const etiquetaDistancia = (m) =>
+  m < 1000 ? `${Math.round(m)} m del centro` : `${(m / 1000).toFixed(1)} km del centro`
 
 // --- Mapeos fila de BD -> forma que usan las vistas ---------------------------
 
@@ -27,11 +44,26 @@ export const mapSite = (s) => ({
   descripcion: s.description,
   horario: s.hours,
   coordenadas: { lat: s.lat, lng: s.lng },
+  distancia: etiquetaDistancia(distanciaMetros(CENTRO, { lat: s.lat, lng: s.lng })),
   radioM: s.radius_m,
   puntos: s.points,
   rareza: s.rarity,
   icono: s.icon,
-  imagen: s.image_url
+  imagen: s.image_url,
+  // Posición del pin sobre la imagen estática de MapaView (temporal hasta el mapa real)
+  topPercent: s.map_top_pct == null ? null : `${Number(s.map_top_pct)}%`,
+  leftPercent: s.map_left_pct == null ? null : `${Number(s.map_left_pct)}%`
+})
+
+export const mapFunFact = (f) => ({
+  id: f.id,
+  badge: f.badge,
+  icono: f.icon,
+  textoPrefix: f.text_prefix,
+  textoDestacado: f.text_highlight,
+  textoSuffix: f.text_suffix,
+  ubicacion: f.location,
+  gradiente: f.gradient
 })
 
 const formatMinutes = (min) => {
@@ -108,9 +140,17 @@ const unwrap = ({ data, error }) => {
   return data
 }
 
-export async function getSites() {
+/** Los 12 museos sueltos (kind = 'museo'). Con { todos: true } incluye también las paradas de ruta. */
+export async function getSites({ todos = false } = {}) {
   if (!isSupabaseConfigured) return MUSEOS_SUELTOS_MOCK
-  return unwrap(await supabase.from('sites').select('*').order('name')).map(mapSite)
+  let query = supabase.from('sites').select('*').order('name')
+  if (!todos) query = query.eq('kind', 'museo')
+  return unwrap(await query).map(mapSite)
+}
+
+export async function getFunFacts() {
+  if (!isSupabaseConfigured) return DATOS_CURIOSOS_MOCK
+  return unwrap(await supabase.from('fun_facts').select('*').order('position')).map(mapFunFact)
 }
 
 /** Ids de lugares cuya carta/escaneo ya tiene el usuario. */
