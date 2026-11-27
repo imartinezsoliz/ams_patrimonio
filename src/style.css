@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    overscroll-behavior-y: none;
+    background-color: #F8F9FF;
+    color: #121C2A;
+  }
+
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
+  }
+
+  .pt-safe {
+    padding-top: max(env(safe-area-inset-top, 0px), 0.5rem);
+  }
+}
+
+/* Ocultar barra de scroll para carruseles horizontales sin perder scroll nativo */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Animación de escaneo láser */
+@keyframes laserScan {
+  0% {
+    top: 5%;
+    opacity: 0.8;
+  }
+  50% {
+    top: 92%;
+    opacity: 1;
+  }
+  100% {
+    top: 5%;
+    opacity: 0.8;
+  }
+}
+
+.animate-laser {
+  animation: laserScan 2.4s ease-in-out infinite;
+}
+
+/* Soporte para reducción de movimiento según directrices de accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
