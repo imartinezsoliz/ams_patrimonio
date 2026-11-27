@@ -92,9 +92,26 @@ export const minutes = (text) => {
 }
 
 // --- Cards: one per site -----------------------------------------------------
-export const cards = CARTAS_MOCK.map((c) => ({ ...c, siteId: canon(c.id) }))
-for (const c of cards) {
-  if (!sites.has(c.siteId)) throw new Error(`Card ${c.id} has no site ${c.siteId}`)
+export // Cards in mockData whose id is not a site id: card id -> site id. Confirm with the team.
+const CARD_SITE = {
+  'museo-colonial-charcas': 'museo-gutierrez-valenzuela', // university museum on Plaza 25 de Mayo
+  'musef-etnografia-1': 'musef',
+  'musef-etnografia-2': 'musef'
+}
+
+// The database allows ONE card per site (cards.site_id is unique), so extra cards for the
+// same site are skipped with a warning until the data model supports several.
+export const cards = []
+const cardSites = new Set()
+for (const c of CARTAS_MOCK) {
+  const siteId = CARD_SITE[c.id] ?? canon(c.id)
+  if (!sites.has(siteId)) throw new Error(`Card ${c.id} has no site ${siteId} (add it to CARD_SITE)`)
+  if (cardSites.has(siteId)) {
+    console.warn(`seed: skipping card "${c.id}": site "${siteId}" already has a card (one card per site)`)
+    continue
+  }
+  cardSites.add(siteId)
+  cards.push({ ...c, siteId })
 }
 
 // Draft cards for every site that has no authored card. Content is a placeholder built

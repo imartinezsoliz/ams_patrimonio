@@ -92,15 +92,36 @@ const emit = defineEmits(['close', 'open-in-map', 'scan'])
             </div>
           </div>
 
-          <!-- Breve Descripción -->
-          <div class="space-y-1.5">
+          <!-- Breve Descripción e Información Ampliada -->
+          <div class="space-y-2">
             <h3 class="text-xs font-extrabold text-navy uppercase tracking-wider flex items-center gap-1.5">
               <span class="material-symbols-outlined text-[16px] text-crimson" aria-hidden="true">info</span>
-              Breve Descripción
+              Sobre este Museo
             </h3>
-            <p class="text-xs text-gray-600 leading-relaxed">
+            <p class="text-xs text-gray-700 font-medium leading-relaxed">
               {{ museo.descripcion }}
             </p>
+            <p v-if="museo.informacionDetallada" class="text-xs text-gray-600 leading-relaxed bg-gray-50 p-3 rounded-xl border border-gray-100">
+              {{ museo.informacionDetallada }}
+            </p>
+          </div>
+
+          <!-- Piezas Destacadas del Museo -->
+          <div v-if="museo.destacados && museo.destacados.length" class="space-y-1.5">
+            <h3 class="text-xs font-extrabold text-navy uppercase tracking-wider flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-crimson" aria-hidden="true">auto_awesome</span>
+              Lo más destacado
+            </h3>
+            <ul class="space-y-1.5">
+              <li
+                v-for="(item, idx) in museo.destacados"
+                :key="idx"
+                class="flex items-start gap-2 text-xs text-gray-700"
+              >
+                <span class="material-symbols-outlined text-[15px] text-crimson shrink-0 mt-0.5" aria-hidden="true">check_circle</span>
+                <span class="leading-snug">{{ item }}</span>
+              </li>
+            </ul>
           </div>
 
           <!-- Ubicación en el Mapa (Mini-Mapa Interactivo) -->

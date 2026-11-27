@@ -5,6 +5,10 @@
  * Orquesta las 4 vistas mediante renderizado dinámico <component :is="...">,
  * gestiona el estado reactivo persistente en localStorage (cartas desbloqueadas y puntos),
  * la revelación inmediata tras escanear un QR y el generador de QRs de prueba.
+ *
+ * Con Supabase configurado, el servidor es la fuente de verdad: puntos, rango y cartas
+ * desbloqueadas vienen de la base de datos (cargada antes de montar, ver services/hydrate.js)
+ * y de redeem_scan; localStorage y los QRs de prueba solo se usan en modo demo.
  */
 import { ref, computed, watch } from 'vue'
 import HeaderNav from './components/HeaderNav.vue'
@@ -21,7 +25,7 @@ import { USER_INITIAL_STATE, CARTAS_MOCK, MONUMENTOS_MOCK, MUSEOS_SUELTOS_MOCK }
 
 const STORAGE_KEY = 'ruta_blanca_progreso_v1'
 
-// Cargar progreso guardado en localStorage (solo en modo demo/offline; con Supabase manda el servidor)
+// Cargar progreso guardado en localStorage (solo en modo demo; con Supabase manda el servidor)
 const cargarProgresoInicial = () => {
   if (!isSupabaseConfigured) {
     try {
@@ -47,7 +51,7 @@ const cargarProgresoInicial = () => {
 
 const progresoGuardado = cargarProgresoInicial()
 
-// Estado reactivo de cartas vinculado a mockData + localStorage
+// Estado reactivo de cartas vinculado a mockData + localStorage (o Supabase si está configurado)
 const cartas = ref(
   CARTAS_MOCK.map((c) => {
     const hallada = progresoGuardado.desbloqueadas.find((d) => d.id === c.id)
@@ -59,7 +63,7 @@ const cartas = ref(
   })
 )
 
-// Calcular rango dinámicamente según puntos
+// Calcular rango dinámicamente según puntos (en modo demo)
 const calcularRango = (pts) => {
   if (pts >= 600) return 'Guardián del Patrimonio'
   if (pts >= 350) return 'Cronista de La Plata'
@@ -69,11 +73,12 @@ const calcularRango = (pts) => {
 const usuario = ref({
   ...USER_INITIAL_STATE,
   puntos: progresoGuardado.puntos,
-  rango: calcularRango(progresoGuardado.puntos)
+  rango: isSupabaseConfigured ? USER_INITIAL_STATE.rango : calcularRango(progresoGuardado.puntos)
 })
 
-// Guardar automáticamente en localStorage cuando cambie el progreso
+// Guardar automáticamente en localStorage cuando cambie el progreso (solo modo demo)
 const guardarProgreso = () => {
+  if (isSupabaseConfigured) return
   try {
     const payload = {
       puntos: usuario.value.puntos,
@@ -143,10 +148,38 @@ const onLocateMuseum = (item) => {
 }
 
 /**
- * Procesa un escaneo QR válido:
- * Desbloquea la carta, suma puntos, guarda en localStorage y muestra la carta ganada.
+ * Procesa un escaneo QR válido (modo servidor con Supabase o modo demo local):
+ * Desbloquea la carta, actualiza puntos/rango y muestra la carta ganada.
  */
 const onScanSuccess = (datosQR) => {
+  // Resultado ya validado por el servidor (redeem_scan): solo se refleja en pantalla
+  if (datosQR.servidor) {
+    const cartaServidor = cartas.value.find((c) => c.id === datosQR.id)
+    if (!datosQR.yaObtenida) {
+      const hoy = new Date()
+      usuario.value.puntos = datosQR.totalPuntos ?? usuario.value.puntos + datosQR.puntos
+      if (datosQR.rango) usuario.value.rango = datosQR.rango
+      if (cartaServidor) {
+        cartaServidor.desbloqueada = true
+        cartaServidor.fechaObtencion = `Hallado hoy ${hoy.getDate()}/${hoy.getMonth() + 1}`
+      }
+    }
+    cartaYaObtenida.value = Boolean(datosQR.yaObtenida)
+    mostrarNotificacion(
+      datosQR.yaObtenida
+        ? `Ya posees la carta: ${datosQR.nombre}`
+        : `¡Reliquia desbloqueada: ${datosQR.nombre}! +${datosQR.puntos} PTS`
+    )
+    if (cartaServidor) {
+      cartaRevelada.value = cartaServidor
+      modalRevelacionAbierto.value = true
+    } else {
+      cambiarVista('coleccion')
+    }
+    return
+  }
+
+  // Modo demo local
   const carta = cartas.value.find(
     (c) => c.id === datosQR.id || c.qrCodigo === datosQR.codigo
   )

@@ -80,8 +80,8 @@ Not implemented yet: offline scan queue (`scanned_at`), impossible-travel flaggi
 ## 4. How the frontend uses the backend
 
 - **Loading data:** `src/main.js` calls `hydrateFromBackend()` (`src/services/hydrate.js`) before mounting. It loads sites, routes, cards, fun facts and the profile from Supabase and replaces the *contents* of the arrays in `mockData.js`, so views need no changes. If `.env` is missing, Supabase is unreachable, or loading takes more than 5 s, the app keeps the demo data. Everything is replaced at once or not at all. This is a temporary bridge: when the team adopts Pinia/composables, delete `hydrate.js` and call `src/services/api.js` from the views.
-- **Scanning:** `EscanerView.vue` reads the camera with `qr-scanner` (lazy-loaded), takes the GPS position, extracts the token from `…/q/<token>` and calls `redeemScan`. `App.vue` is unchanged: on `success` the view emits the same `scan-success` event as before, with the server's result. The "Código" button opens a manual entry field (no camera, damaged plaque).
-- **Demo mode** (no `.env`): the simulated scan chip still works and real scans show "Modo demo".
+- **Scanning:** `EscanerView.vue` reads the camera with jsQR. In backend mode it takes the GPS position, extracts the token from `…/q/<token>` and calls `redeemScan`; `App.vue` then only reflects the server's result (`scan-success` with `servidor: true`: points, rank, card). The "Código" button opens manual entry (no camera, damaged plaque).
+- **Demo mode** (no `.env`): progress lives in `localStorage`, scans are matched against the legacy `qrCodigo` values, and the "QRs de prueba" tools are available. In backend mode those tools are hidden, because those codes are not real plaques.
 
 ### Testing the real flow on one machine
 1. Do steps 1–2 above, then `npm run qr:generate -- --site casa-de-la-libertad`.

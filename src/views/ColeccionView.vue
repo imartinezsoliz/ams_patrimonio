@@ -2,11 +2,12 @@
 /**
  * ColeccionView.vue
  * Vista reactiva de Colección de Cartas Patrimoniales ("Mis Cartas").
- * Muestra cartas desbloqueadas (con sus fotos de /public/cartas/) primero,
- * progreso real calculado, filtros por categoría y acceso al generador de QRs.
+ * Muestra cartas desbloqueadas (con sus fotos de /public/cartas/ o Supabase Storage) primero,
+ * progreso real calculado, filtros por categoría y acceso al generador de QRs en modo demo.
  */
 import { ref, computed } from 'vue'
 import CardDetailModal from '../components/CardDetailModal.vue'
+import { isSupabaseConfigured } from '../lib/supabase.js'
 
 const props = defineProps({
   usuario: {
@@ -96,14 +97,18 @@ const abrirDetalles = (carta) => {
         ></div>
       </div>
 
-      <!-- Métricas de Descubrimiento + Botón de Códigos QR -->
+      <!-- Métricas de Descubrimiento + Botón de Códigos QR (en modo demo) -->
       <div class="flex justify-between items-center text-gray-500 text-xs">
         <span class="flex items-center gap-1">
           <span class="material-symbols-outlined text-[14px] text-crimson" aria-hidden="true">auto_awesome</span>
           <span class="tabular-nums font-bold text-navy">{{ totalCartasDescubiertas }}</span> descubiertas
         </span>
 
+        <span v-if="isSupabaseConfigured" class="font-medium text-tertiary">
+          <span class="tabular-nums font-semibold">{{ totalPorEncontrar }}</span> por encontrar
+        </span>
         <button
+          v-else
           type="button"
           @click="emit('open-qr-generator')"
           class="text-[11px] font-bold text-crimson hover:underline flex items-center gap-1 bg-red-50 px-2.5 py-1 rounded-full border border-red-100 active:scale-95 transition-transform"

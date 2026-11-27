@@ -1,8 +1,9 @@
 <script setup>
 /**
  * CardDetailModal.vue
- * Modal interactivo para visualizar los detalles de una carta desbloqueada,
- * o celebrar el desbloqueo inmediato tras escanear un código QR.
+ * Modal interactivo para visualizar los detalles completos de una carta desbloqueada,
+ * o celebrar el desbloqueo inmediato tras escanear un código QR mostrando la fotografía
+ * real e información histórica ampliada del museo correspondiente.
  */
 defineProps({
   carta: {
@@ -40,15 +41,15 @@ const emit = defineEmits(['close', 'go-collection'])
 
       <!-- Contenedor de la Carta -->
       <div 
-        class="relative z-10 w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 pb-8 shadow-2xl overflow-hidden flex flex-col gap-4 max-h-[92vh] overflow-y-auto"
+        class="relative z-10 w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 pb-7 shadow-2xl overflow-hidden flex flex-col gap-3.5 max-h-[92vh] overflow-y-auto"
       >
         <!-- Manija móvil -->
-        <div class="w-12 h-1.5 rounded-full bg-gray-200 mx-auto -mt-1 sm:hidden"></div>
+        <div class="w-12 h-1.5 rounded-full bg-gray-200 mx-auto -mt-1 shrink-0 sm:hidden"></div>
 
         <!-- Banner de Celebración si proviene del Escáner QR -->
         <div
           v-if="esDesbloqueo"
-          class="p-3 rounded-2xl flex items-center gap-3 border"
+          class="p-3 rounded-2xl flex items-center gap-3 border shrink-0"
           :class="yaObtenida ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-red-50 border-red-200 text-crimson'"
         >
           <div
@@ -70,7 +71,7 @@ const emit = defineEmits(['close', 'go-collection'])
         </div>
 
         <!-- Encabezado del Modal -->
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between shrink-0">
           <span class="text-[11px] uppercase font-bold tracking-wider px-3 py-1 rounded-full bg-red-50 text-crimson border border-red-100">
             {{ carta.categoriaLabel }} · {{ carta.rareza }}
           </span>
@@ -85,8 +86,8 @@ const emit = defineEmits(['close', 'go-collection'])
           </button>
         </div>
 
-        <!-- Ventana de Arte de la Carta (Foto real de /public/cartas/) -->
-        <div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border-2 border-crimson bg-slate-100">
+        <!-- Ventana de Arte de la Carta (Foto real de /public/cartas/ o /public/museos/) -->
+        <div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border-2 border-crimson bg-slate-100 shrink-0">
           <img 
             :src="carta.imagen" 
             :alt="`Fotografía de ${carta.titulo}`"
@@ -108,18 +109,71 @@ const emit = defineEmits(['close', 'go-collection'])
           </div>
         </div>
 
-        <!-- Texto Histórico y Contenido -->
+        <!-- Título y Resumen -->
         <div class="flex flex-col gap-1.5">
-          <h2 :id="`modal-title-${carta.id}`" class="text-xl font-extrabold text-navy">
+          <h2 :id="`modal-title-${carta.id}`" class="text-xl font-extrabold text-navy leading-tight">
             {{ carta.titulo }}
           </h2>
-          <p class="text-sm text-gray-600 leading-relaxed">
+          <p class="text-xs font-semibold text-crimson leading-relaxed">
             {{ carta.historiaCorta }}
           </p>
         </div>
 
+        <!-- Mayor Información Histórica del Museo -->
+        <div
+          v-if="carta.informacionDetallada"
+          class="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 space-y-2"
+        >
+          <h3 class="text-[11px] font-extrabold text-navy uppercase tracking-wider flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-crimson" aria-hidden="true">menu_book</span>
+            Historia y Patrimonio del Museo
+          </h3>
+          <p class="text-xs text-gray-600 leading-relaxed">
+            {{ carta.informacionDetallada }}
+          </p>
+        </div>
+
+        <!-- Piezas o Puntos Imperdibles -->
+        <div v-if="carta.destacados && carta.destacados.length" class="space-y-1.5">
+          <h3 class="text-[11px] font-extrabold text-navy uppercase tracking-wider flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-crimson" aria-hidden="true">auto_awesome</span>
+            Qué no te puedes perder
+          </h3>
+          <ul class="space-y-1.5">
+            <li
+              v-for="(item, idx) in carta.destacados"
+              :key="idx"
+              class="flex items-start gap-2 text-xs text-gray-700 bg-white border border-gray-100 rounded-xl px-3 py-2 shadow-2xs"
+            >
+              <span class="material-symbols-outlined text-[15px] text-crimson shrink-0 mt-0.5" aria-hidden="true">
+                check_circle
+              </span>
+              <span class="leading-snug">{{ item }}</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Datos Prácticos de Visita -->
+        <div v-if="carta.direccion || carta.horario" class="grid grid-cols-2 gap-2">
+          <div v-if="carta.direccion" class="p-2.5 rounded-xl bg-gray-50 border border-gray-100 flex items-start gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-crimson shrink-0 mt-0.5" aria-hidden="true">pin_drop</span>
+            <div class="min-w-0">
+              <span class="text-[9px] font-bold text-gray-400 uppercase block">Ubicación</span>
+              <span class="text-[11px] font-semibold text-navy leading-snug block">{{ carta.direccion }}</span>
+            </div>
+          </div>
+
+          <div v-if="carta.horario" class="p-2.5 rounded-xl bg-gray-50 border border-gray-100 flex items-start gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-navy shrink-0 mt-0.5" aria-hidden="true">schedule</span>
+            <div class="min-w-0">
+              <span class="text-[9px] font-bold text-gray-400 uppercase block">Horario</span>
+              <span class="text-[11px] font-semibold text-navy leading-snug block">{{ carta.horario }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Acciones -->
-        <div class="flex gap-2.5 pt-1">
+        <div class="flex gap-2.5 pt-1 shrink-0">
           <button
             v-if="esDesbloqueo"
             type="button"

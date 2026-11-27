@@ -1,6 +1,7 @@
 /**
  * Modelos de datos para La Ruta Blanca (Sucre, Bolivia)
- * Desacoplado para sincronización con Firebase Firestore y Geolocation API.
+ * Desacoplado para sincronización con Supabase/Firestore y Geolocation API.
+ * Todas las fotografías de museos y cartas están vinculadas a /public/museos/ y /public/cartas/.
  */
 
 export const USER_INITIAL_STATE = {
@@ -63,7 +64,7 @@ export const DATOS_CURIOSOS_MOCK = [
 ]
 
 /**
- * Catálogo completo de los 12 Museos Sueltos de Sucre
+ * Catálogo completo de los 12 Museos Sueltos de Sucre (con fotos reales en /public/museos/)
  */
 export const MUSEOS_SUELTOS_MOCK = [
   {
@@ -75,8 +76,14 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "museum",
     puntos: 150,
     rareza: "Épica",
-    imagen: "/cartas/casa_de_la%20_libertad.jpeg",
+    imagen: "/museos/casa%20libertad.jpeg",
     descripcion: "Cuna de la patria boliviana. En su histórico Salón Virreinal se firmó el Acta de la Independencia en 1825 y alberga la galería de cuadros de los presidentes.",
+    informacionDetallada: "Edificado en el siglo XVII como parte del conjunto jesuítico y sede de la Universidad San Francisco Xavier, este recinto fue testigo del nacimiento de Bolivia el 6 de agosto de 1825. Sus muros blancos resguardan documentos fundacionales, retratos originales de los libertadores y el emblemático Salón de los Presidentes.",
+    destacados: [
+      "Acta original de la Independencia de Bolivia (1825)",
+      "Salón Virreinal y sillería tallada en cedro",
+      "Galería histórica con los óleos de los presidentes"
+    ],
     coordenadas: { lat: -19.0479, lng: -65.2596 },
     topPercent: "38%",
     leftPercent: "48%",
@@ -92,8 +99,14 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "castle",
     puntos: 150,
     rareza: "Legendaria",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuB4zd-nmKZzG9xa98LJUg1z342tmUMwZEmJe1D4AcCYGOarmCo_hjRo6Q3AXhSXZOlZ6ZE3DA9Lin0QLluJ-93qZunZfVxOq5I7Z1lx_klw893OcBJJ6doTZkcUK_QBHbnfEjVwC_tIRgP1Ks1-IM8fhTflauOsvObSRKM-siyVlFQ40lYFLQIL9SmmOruLculrEHSxhXIfrwTXFwjPAJ58QH5L3jrtEl9W0rcM3ug",
+    imagen: "/museos/glorieta.jpeg",
     descripcion: "Único principado de Bolivia, residencia de los Príncipes de La Glorieta con una asombrosa mezcla de estilos gótico, morisco, renacentista y bizantino.",
+    informacionDetallada: "Construido entre 1893 y 1897 por el empresario minero Francisco Argandoña y Clotilde Urioste, quienes recibieron del Papa León XIII el título nobiliario de Príncipes de La Glorieta por sus obras filantrópicas. Su diseño ecléctico reúne cúpulas rusas, torres góticas y arcos moriscos en un entorno campestre inolvidable.",
+    destacados: [
+      "Torre del Príncipe (45 metros de altura) y mirador",
+      "Capilla gótica y salón de recepciones reales",
+      "Jardines históricos y carruajes de finales del siglo XIX"
+    ],
     coordenadas: { lat: -19.0911, lng: -65.2831 },
     topPercent: "82%",
     leftPercent: "22%",
@@ -109,8 +122,14 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "palette",
     puntos: 120,
     rareza: "Rara",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuDUA6whty5OmehKlWp2Tw95O6ncPDGdhnNJSP87-KfXOvdjxl6D5YTBBrpBCet048n5c4Z5_Vbo4GrvKXoxleq2wiqGdKthALv0XWtxwl9vRciffuzm7V_6ibwyFOorI3SqFEKRA0JsbeSHaPCXFrZ2TSlIOepNp0SsjnQ2Wi3KsTujQ5ITECdRwyNjGCY0ROuvRhom_r5chTjopGPd8HZbEA78US4U0BWtnoAMR4g",
+    imagen: "/museos/arte%20indigena.jpeg",
     descripcion: "Exhibición de arte textil tradicional de las culturas Jalq'a y Tarabuco, mostrando cosmovisiones andinas con telares vivos y bordados ancestrales.",
+    informacionDetallada: "Fundado por la Fundación ASUR en una antigua casona frente a La Recoleta, este museo revitaliza el tejido indígena contemporáneo de Chuquisaca. Los visitantes observan la técnica del 'khuru' y la iconografía mítica de los pueblos Jalq'a (en rojo y negro) y Tarabuco (con escenas festivas del Pujllay).",
+    destacados: [
+      "Salas de textiles míticos Jalq'a y Tarabuco",
+      "Demostración en vivo de maestras tejedoras",
+      "Instrumentos musicales y vestimenta ritual andina"
+    ],
     coordenadas: { lat: -19.0535, lng: -65.2534 },
     topPercent: "29%",
     leftPercent: "75%",
@@ -126,8 +145,14 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "diversity_3",
     puntos: 120,
     rareza: "Rara",
-    imagen: "/cartas/etmografia.jpeg",
+    imagen: "/museos/etnografia.jpeg",
     descripcion: "Instalado en una señorial casona virreinal, custodia máscaras ceremoniales bolivianas, plumería sagrada, cerámica precolombina y numismática.",
+    informacionDetallada: "La sede chuquisaqueña del MUSEF ocupa el antiguo Banco Nacional de Bolivia y una residencia colonial restaurada. Sus salas exploran la diversidad cultural de Bolivia a través de máscaras de danzas folklóricas, arte plumario amazónico, textiles prehispánicos y monedas acuñadas en Charcas y Potosí.",
+    destacados: [
+      "Colección de máscaras ceremoniales de los Andes",
+      "Arte plumario ceremonial y textiles tradicionales",
+      "Patio virreinal con arquería y exposiciones temporales"
+    ],
     coordenadas: { lat: -19.0488, lng: -65.2605 },
     topPercent: "52%",
     leftPercent: "38%",
@@ -143,8 +168,14 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "history_edu",
     puntos: 100,
     rareza: "Común",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuBFuzzo0uHbqHKIFqThvfbhLs8fwKBrpjpr8b9epNwT0-5xkQ7_rrWkGHQXOPEcgVPEhlnfxZK_biCUEz4g0KWm9XjgzXZkdG6XBRVdr8ObiO-jq3AmHH7P39pHSkwRsqPVqTzw-EMh8UwRZM_AZhdlmVeh6jd-OA74RHM61dLMT4O9YjVqjL7-HxUHcSgoVuRWu4FKD7qIUeXwpaxt6mfYyZH_CU8-KUuoXCvTc9U",
+    imagen: "/museos/universitario%20dr%20alberto.jpeg",
     descripcion: "Colección señorial de porcelanas de Sèvres, cristal de Baccarat, muebles virreinales de madera taraceada y lienzos de maestros europeos y coloniales.",
+    informacionDetallada: "Donado a la Universidad San Francisco Xavier por el diplomático y filántropo Alfredo Gutiérrez Valenzuela, este museo recrea el refinamiento de los salones aristocráticos de la Sucre de principios del siglo XX, combinando artes decorativas europeas con mobiliario barroco del Alto Perú.",
+    destacados: [
+      "Porcelanas francesas de Sèvres y cristalería Baccarat",
+      "Salón de estilo Luis XV y mobiliario taraceado",
+      "Pinacoteca con retratos y paisajes históricos de Sucre"
+    ],
     coordenadas: { lat: -19.0475, lng: -65.2589 },
     topPercent: "44%",
     leftPercent: "54%",
@@ -160,8 +191,14 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "church",
     puntos: 130,
     rareza: "Épica",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuDj0qwOSE1Va28E5Hrx2kNZA9hr3TP1NkdaWrxEg8MjiOehQYd2EzPL2xin5pZMUVUFnQQNeKLE0beZC1Dwe7Qbb6yAkSW1iAwY_IUXT0aXhO1Rdi_UGqSQYRqlO6OdfSzJXw2EDJf020n7E9Zl1J_6ogBp62osOXeAJRAvLay4dSvXteE_9X-SAQ44NJ6YEbOBHfgsk6AYoh6_zk3NzfJbntM-v9-6oEf0-fVqHus",
+    imagen: "/museos/catedral.jpeg",
     descripcion: "Tesoros litúrgicos más ricos de América del Sur. Custodia la imagen enjoyada de la Virgen de Guadalupe, orfebrería de plata potosina y custodias coloniales.",
+    informacionDetallada: "Ubicado anexo a la Basílica Metropolitana de Sucre, el Museo Monseñor Taborga conserva un patrimonio sacro incomparable acumulado desde el siglo XVI, cuando la Arquidiócesis de La Plata era una de las más ricas del continente gracias a la plata del Cerro Rico.",
+    destacados: [
+      "Manto enjoyado de la Virgen de Guadalupe (1601)",
+      "Custodia colonial de oro, perlas y piedras preciosas",
+      "Obras pictóricas de Bernardo Bitti y Gregorio Gamarra"
+    ],
     coordenadas: { lat: -19.0483, lng: -65.2601 },
     topPercent: "50%",
     leftPercent: "43%",
@@ -177,8 +214,14 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "landscape",
     puntos: 120,
     rareza: "Rara",
-    imagen: "/cartas/Recoleta.png",
+    imagen: "/museos/recoleta.jpeg",
     descripcion: "Convento franciscano de 1601 con claustros de naranjos centenarios, sillería tallada en cedro y una terraza panorámica con mirador a la ciudad.",
+    informacionDetallada: "Erigido en 1601 por Fray Francisco Morales en las faldas del cerro Churuquella, justo donde en 1538 se fundó la Villa de La Plata. En su jardín principal sobrevive un cedro milenario y su templo alberga una sillería coral tallada en madera de cedro considerada joya del barroco americano.",
+    destacados: [
+      "Mirador de arcos blancos con vista panorámica de Sucre",
+      "Sillería del coro franciscano tallada en cedro (siglo XVII)",
+      "Claustros de naranjos y el cedro centenario de La Recoleta"
+    ],
     coordenadas: { lat: -19.0531, lng: -65.2528 },
     topPercent: "24%",
     leftPercent: "79%",
@@ -194,8 +237,14 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "auto_stories",
     puntos: 110,
     rareza: "Rara",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuAvDj7w00yuM6MrDp97o1RJk3Mev-xafLPRrBCsbvd-r6RRGJ3LlEG0mckzysZghIWg3EQebTfv5nIrp54Z4gfs-_VMW_1RIR1UhbztwnC7roeNcqiE4Com0yqP3WeopfUDPfohexYXOF3p6E569UbYjI0o-u3gLnnTwvx-pUT0aD1EL55Obw5jtJCuidQDmFUUb1CUtGZiIhVNfW2-rZNBfvhibVENreAlNlDyIFA",
+    imagen: "/museos/santaclara.jpeg",
     descripcion: "Fundado en 1639 por las monjas clarisas. Exhibe pintura barroca mestiza de Bernardo Bitti y Melchor Pérez de Holguín, instrumentos de coro y criptas.",
+    informacionDetallada: "Convento de clausura fundado en el siglo XVII cuyas salas preservan un valioso legado de pintura manierista y barroca del Alto Perú, además de un órgano tubular del siglo XVII, relicarios de plata y un patio silencioso que transporta al visitante a la vida monástica colonial.",
+    destacados: [
+      "Lienzos de Bernardo Bitti y Melchor Pérez de Holguín",
+      "Antiguo órgano de fuelles y libros corales en pergamino",
+      "Criptas coloniales y torre mirador del convento"
+    ],
     coordenadas: { lat: -19.0498, lng: -65.2575 },
     topPercent: "58%",
     leftPercent: "62%",
@@ -211,8 +260,14 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "pets",
     puntos: 150,
     rareza: "Épica",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuCjpFCmwe14ldYgNVQEWbeqE4JhpZX2HGQf8EI8SWZWCyr3Tat0F1V8RCmzvrPnyh7f-ZoJKxEYK-HR91iPYW2AciHQspz6AtQsqgdzrU9WruH_UhKqRvPBfwTMy1fNJFYBiuxkC7PL_EHV-J7i1xzvt5iiFtum8bm_G-JCwnOlDrCDoSFhvYiLAIpY_8G_LV8DJHJxRF44x4bp_MZlPMgkxs7GYAFwCn4gEXACwKc",
+    imagen: "/museos/cretacico.jpeg",
     descripcion: "El farallón con más de 12.000 huellas de dinosaurios más grande del mundo. Incluye réplicas a escala real de titanosaurios y carnotauros.",
+    informacionDetallada: "Hace 68 millones de años, la zona de Cal Orck'o era la orilla de un inmenso lago donde caminaron manadas de titanosaurios, anquilosaurios y terópodos. Hoy el levantamiento tectónico andino exhibe esta pared casi vertical de 1,2 km de largo con miles de pisadas fosilizadas únicas en el planeta.",
+    destacados: [
+      "Farallón de Cal Orck'o con más de 12.000 huellas fósiles",
+      "Esculturas a tamaño real de Titanosaurio y Tyrannosaurus",
+      "Sendero interactivo y museo audiovisual del Cretácico"
+    ],
     coordenadas: { lat: -19.0062, lng: -65.2344 },
     topPercent: "16%",
     leftPercent: "20%",
@@ -228,8 +283,14 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "savings",
     puntos: 100,
     rareza: "Común",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuAhPaU2WUwsQ4lk5xEhglxgPqdGA3RKFf5foN06xZyXDiQLV0ILgsseml0ZDAc9rbwjQKhu5bWmdZazseSJwdvQNVbxuIAkJNTci0hXx-N4oDHdkbO42yx1mRaFjO9G9VQ5UK8OvNFQOt6HsORRdonvcKH0ubYf8_Hqr4Ro1TndeMInfEt6WG-QS5xIQLxrGe-zrs7l8dVzojBA160ej5qqRa5hxbCt8uduZXI2Afo",
+    imagen: "/museos/tesoro.jpeg",
     descripcion: "Antiguo tesoro real y casona virreinal que conserva lingotes, monedas de plata macuquinas de la Real Casa de Moneda y relicarios coloniales.",
+    informacionDetallada: "Instalado en una casona histórica del centro de Sucre, este museo permite conocer la historia económica de la Real Audiencia de Charcas, mostrando cómo la plata extraída en el sur boliviano circulaba en forma de monedas macuquinas, barras y piezas de platería religiosa y doméstica.",
+    destacados: [
+      "Monedas macuquinas y piezas numismáticas coloniales",
+      "Bóvedas históricas y lingotes de plata",
+      "Orfebrería virreinal y mobiliario de época"
+    ],
     coordenadas: { lat: -19.0465, lng: -65.2612 },
     topPercent: "31%",
     leftPercent: "34%",
@@ -245,8 +306,14 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "bakery_dining",
     puntos: 100,
     rareza: "Común",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuA8muneXTSFIpSCVXoZKiuwDAYtpITENkStBmwdYeakpacSt8YXbOJ21B2_mhZ52jOKOZXWm0d9SCnKpaKh1ht-pTz34EztkHhmm3uEzddjFveLzpk9qXSZ_LxUlTuQtQuSdssavih3pTGX-g5yhY_LfwCHW9WBEYqThKUZ3onMElACKlaPggFitNTlDUxqrA2VcJyiix2fky0bLLfLnwSUMV5nDRCUYLB2J_LdPSk",
+    imagen: "/museos/pan.jpeg",
     descripcion: "Homenaje a los legendarios hornos de leña coloniales y a las maestras panificadoras de Sucre, con la historia del pan de batalla, tantawawas y empanadas.",
+    informacionDetallada: "Un espacio dedicado a una de las tradiciones gastronómicas más queridas de Chuquisaca. Muestra antiguos utensilios de amasado, moldes tradicionales, hornos de barro y el oficio de las panaderas chuquisaqueñas que perfeccionaron masas dulces, marraquetas y las icónicas tantawawas de Todos Santos.",
+    destacados: [
+      "Antiguo horno de barro y leña de tradición colonial",
+      "Herramientas artesanales de panificación tradicional",
+      "Exhibición de panes ceremoniales y tantawawas"
+    ],
     coordenadas: { lat: -19.0460, lng: -65.2620 },
     topPercent: "27%",
     leftPercent: "30%",
@@ -262,8 +329,14 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "cookie",
     puntos: 100,
     rareza: "Común",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuBFjsbvQizkh8eD2wbNOYYZc7u-GAhxK78XrLwC7jWoEQ0q8lwqsN3vyB0Gi4gpWarL5SILPDF0QsDt23JEs33vaTqvh9-kR1A61_j-gtnt7pEZ4DT-lqYrqOwycB38Dnox63BNRG-zUFvVtiDbzr8elhLTRoy7kIztJQgoXerPxM3MI2BLJ6KUufw5J1p6TFyGaFJlM1Hq59Jc-vkcBm5D5XX5sHhfZnl_Eaq7HTk",
+    imagen: "/museos/chocolate.jpeg",
     descripcion: "La tradición chocolatera de Sucre. Un recorrido interactivo desde la semilla de cacao silvestre amazónico hasta las famosas fábricas y bombones chuquisaqueños.",
+    informacionDetallada: "Sucre es reconocida como la capital del chocolate artesanal en Bolivia. Este museo recorre la historia del cacao nativo boliviano desde su recolección en la Amazonía hasta los antiguos molinos, prensas y maestras chocolateras que dieron fama nacional a los bombones de la ciudad blanca.",
+    destacados: [
+      "Maquinaria histórica de tostado y molienda de cacao",
+      "Historia de las familias chocolateras de Sucre",
+      "Degustación de cacao silvestre y bombones artesanales"
+    ],
     coordenadas: { lat: -19.0490, lng: -65.2585 },
     topPercent: "64%",
     leftPercent: "56%",
@@ -289,7 +362,7 @@ export const RUTAS_MOCK = [
     totalCartas: 4,
     badgeTexto: "Vistas 360°",
     badgeTipo: "nuevo",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuDUA6whty5OmehKlWp2Tw95O6ncPDGdhnNJSP87-KfXOvdjxl6D5YTBBrpBCet048n5c4Z5_Vbo4GrvKXoxleq2wiqGdKthALv0XWtxwl9vRciffuzm7V_6ibwyFOorI3SqFEKRA0JsbeSHaPCXFrZ2TSlIOepNp0SsjnQ2Wi3KsTujQ5ITECdRwyNjGCY0ROuvRhom_r5chTjopGPd8HZbEA78US4U0BWtnoAMR4g",
+    imagen: "/museos/recoleta.jpeg",
     museos: [
       {
         id: "san-felipe-neri",
@@ -346,7 +419,7 @@ export const RUTAS_MOCK = [
     totalCartas: 5,
     badgeTexto: "Historia Republicana",
     badgeTipo: "nuevo",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuBFuzzo0uHbqHKIFqThvfbhLs8fwKBrpjpr8b9epNwT0-5xkQ7_rrWkGHQXOPEcgVPEhlnfxZK_biCUEz4g0KWm9XjgzXZkdG6XBRVdr8ObiO-jq3AmHH7P39pHSkwRsqPVqTzw-EMh8UwRZM_AZhdlmVeh6jd-OA74RHM61dLMT4O9YjVqjL7-HxUHcSgoVuRWu4FKD7qIUeXwpaxt6mfYyZH_CU8-KUuoXCvTc9U",
+    imagen: "/museos/casa%20libertad.jpeg",
     museos: [
       {
         id: "residencia-severo-fernandez",
@@ -413,7 +486,7 @@ export const RUTAS_MOCK = [
     totalCartas: 4,
     badgeTexto: "En Progreso",
     badgeTipo: "progreso",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuA8muneXTSFIpSCVXoZKiuwDAYtpITENkStBmwdYeakpacSt8YXbOJ21B2_mhZ52jOKOZXWm0d9SCnKpaKh1ht-pTz34EztkHhmm3uEzddjFveLzpk9qXSZ_LxUlTuQtQuSdssavih3pTGX-g5yhY_LfwCHW9WBEYqThKUZ3onMElACKlaPggFitNTlDUxqrA2VcJyiix2fky0bLLfLnwSUMV5nDRCUYLB2J_LdPSk",
+    imagen: "/museos/santaclara.jpeg",
     museos: [
       {
         id: "casa-de-la-libertad",
@@ -474,7 +547,7 @@ export const MONUMENTOS_MOCK = [
     leftPercent: "50%",
     icono: "museum",
     rareza: "Épica",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuAvDj7w00yuM6MrDp97o1RJk3Mev-xafLPRrBCsbvd-r6RRGJ3LlEG0mckzysZghIWg3EQebTfv5nIrp54Z4gfs-_VMW_1RIR1UhbztwnC7roeNcqiE4Com0yqP3WeopfUDPfohexYXOF3p6E569UbYjI0o-u3gLnnTwvx-pUT0aD1EL55Obw5jtJCuidQDmFUUb1CUtGZiIhVNfW2-rZNBfvhibVENreAlNlDyIFA",
+    imagen: "/museos/casa%20libertad.jpeg",
     descripcion: "Cuna de la independencia de Bolivia. En su Aula Magna se firmó el acta de fundación de la República en 1825.",
     qrCodigo: "RUTA-BLANCA-CDL-1825",
     puntos: 150
@@ -490,7 +563,7 @@ export const MONUMENTOS_MOCK = [
     leftPercent: "78%",
     icono: "church",
     rareza: "Rara",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuDUA6whty5OmehKlWp2Tw95O6ncPDGdhnNJSP87-KfXOvdjxl6D5YTBBrpBCet048n5c4Z5_Vbo4GrvKXoxleq2wiqGdKthALv0XWtxwl9vRciffuzm7V_6ibwyFOorI3SqFEKRA0JsbeSHaPCXFrZ2TSlIOepNp0SsjnQ2Wi3KsTujQ5ITECdRwyNjGCY0ROuvRhom_r5chTjopGPd8HZbEA78US4U0BWtnoAMR4g",
+    imagen: "/museos/recoleta.jpeg",
     descripcion: "Convento franciscano fundado en 1601 a los pies del cerro Churuquella con una vista panorámica inigualable de la ciudad blanca.",
     qrCodigo: "RUTA-BLANCA-REC-1601",
     puntos: 100
@@ -506,7 +579,7 @@ export const MONUMENTOS_MOCK = [
     leftPercent: "22%",
     icono: "roofing",
     rareza: "Rara",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuA8muneXTSFIpSCVXoZKiuwDAYtpITENkStBmwdYeakpacSt8YXbOJ21B2_mhZ52jOKOZXWm0d9SCnKpaKh1ht-pTz34EztkHhmm3uEzddjFveLzpk9qXSZ_LxUlTuQtQuSdssavih3pTGX-g5yhY_LfwCHW9WBEYqThKUZ3onMElACKlaPggFitNTlDUxqrA2VcJyiix2fky0bLLfLnwSUMV5nDRCUYLB2J_LdPSk",
+    imagen: "/museos/catedral.jpeg",
     descripcion: "Templo y convento neoclásico famoso por sus terrazas techadas con tejas coloniales que ofrecen vistas de campanarios.",
     qrCodigo: "RUTA-BLANCA-SFN-1795",
     puntos: 100
@@ -531,7 +604,8 @@ export const MONUMENTOS_MOCK = [
 
 /**
  * Catálogo de Cartas Coleccionables
- * Vinculado directamente con las fotografías locales de /public/cartas/ y sus códigos QR.
+ * Vinculado directamente con las fotografías locales de /public/cartas/ y /public/museos/,
+ * con información histórica ampliada y puntos clave de visita para cada museo.
  */
 export const CARTAS_MOCK = [
   {
@@ -547,7 +621,15 @@ export const CARTAS_MOCK = [
     iconoPista: "verified",
     qrCodigo: "RUTA-BLANCA-CDL-1825",
     imagen: "/cartas/casa_de_la%20_libertad.jpeg",
-    historiaCorta: "El templo cívico más sagrado de Bolivia. En su imponente Salón Virreinal resonaron las voces que declararon la libertad americana y alberga la histórica galería presidencial."
+    direccion: "Plaza 25 de Mayo Nº 11",
+    horario: "Mar - Sáb: 09:00 - 16:30",
+    historiaCorta: "El templo cívico más sagrado de Bolivia. En su imponente Salón Virreinal resonaron las voces que declararon la libertad americana el 6 de agosto de 1825.",
+    informacionDetallada: "Construida en el siglo XVII por la Compañía de Jesús como capilla doméstica y aula magna de la Real y Pontificia Universidad de San Francisco Xavier, la Casa de la Libertad fue el escenario de la Asamblea Deliberante que fundó la República de Bolivia. Sus claustros de muros encalados y tejas coloniales custodian hoy el Acta de la Independencia, la espada del Mariscal Antonio José de Sucre, retratos de los libertadores y el Salón de los Presidentes con las efigies al óleo de los mandatarios del país.",
+    destacados: [
+      "Acta original de la Independencia de Bolivia (1825)",
+      "Salón Virreinal de la Independencia y púlpito barroco",
+      "Galería histórica de los Presidentes de Bolivia"
+    ]
   },
   {
     id: "la-recoleta",
@@ -561,7 +643,15 @@ export const CARTAS_MOCK = [
     iconoPista: "qr_code",
     qrCodigo: "RUTA-BLANCA-REC-1601",
     imagen: "/cartas/Recoleta.png",
-    historiaCorta: "Convento franciscano fundado en 1601 en el sitio donde nació la Villa de La Plata. Su mirador regala un atardecer colonial inigualable."
+    direccion: "Plaza Pedro de Anzúrez s/n",
+    horario: "Lun - Sáb: 09:00 - 16:30",
+    historiaCorta: "Convento franciscano fundado en 1601 en el sitio exacto donde nació la Villa de La Plata en 1538.",
+    informacionDetallada: "Situado a los pies del cerro Churuquella en la parte alta de la ciudad, el Convento de Santa Ana de Monte Sión (La Recoleta) conserva tres apacibles claustros de arquerías blancas, jardines con naranjos y un cedro milenario de más de mil años. En el interior de su templo destaca una sillería coral del siglo XVII tallada íntegramente en madera de cedro con motivos barrocos, mientras su plaza exterior funciona como el mirador panorámico más emblemático de Sucre.",
+    destacados: [
+      "Mirador de arcos blancos frente a la Plaza Pedro de Anzúrez",
+      "Sillería del coro tallada en cedro del siglo XVII",
+      "Claustros franciscanos y el cedro milenario"
+    ]
   },
   {
     id: "museo-colonial-charcas",
@@ -575,7 +665,15 @@ export const CARTAS_MOCK = [
     iconoPista: "museum",
     qrCodigo: "RUTA-BLANCA-CHARCAS-1939",
     imagen: "/cartas/charcas.jpeg",
-    historiaCorta: "Museo Universitario Colonial Charcas de la USFX. Custodia valiosas colecciones de arte virreinal, pinacoteca colonial, platería y piezas republicanas."
+    direccion: "Calle Bolívar Nº 698 (Casa de los Condes de Revilla)",
+    horario: "Lun - Sáb: 09:00 - 17:00",
+    historiaCorta: "Museo Universitario Colonial Charcas de la USFX, instalado en una majestuosa casona aristocrática del siglo XVII.",
+    informacionDetallada: "Fundado en 1939 bajo tuición de la Universidad Mayor, Real y Pontificia de San Francisco Xavier de Chuquisaca, ocupa el palacio que perteneció al Obispo Castilla y Zamora y a los Condes de Revilla. Sus salas exhiben una de las colecciones más importantes de pintura colonial de la escuela potosina y chuquisaqueña —con obras de Melchor Pérez de Holguín y Gaspar Miguel de Berrío—, escultura policromada, platería virreinal, muebles taraceados y retratos de próceres republicanos.",
+    destacados: [
+      "Pinacoteca colonial con lienzos de Melchor Pérez de Holguín",
+      "Salas de escultura sacra y platería de la Audiencia de Charcas",
+      "Patio señorial de piedra labrada y galerías coloniales"
+    ]
   },
   {
     id: "palacete-guereo",
@@ -589,7 +687,15 @@ export const CARTAS_MOCK = [
     iconoPista: "domain",
     qrCodigo: "RUTA-BLANCA-GUEREO-1895",
     imagen: "/cartas/palacete.jpeg",
-    historiaCorta: "Emblemática casona señorial chuquisaqueña con elegantes galerías, arcos de transición colonial-republicana y jardines históricos."
+    direccion: "Zona El Guereo, Sucre",
+    horario: "Lun - Vie: 09:00 - 16:30",
+    historiaCorta: "Emblemática casona señorial chuquisaqueña de transición colonial-republicana rodeada de amplias terrazas y jardines.",
+    informacionDetallada: "Erigido en las inmediaciones de la histórica zona de El Guereo, este palacete refleja el esplendor arquitectónico de las élites sucrenses de finales del siglo XIX y principios del XX. Combina la elegancia neoclásica francesa en sus fachadas y saloncitos altos con patios tradicionales encalados, balcones miradores y arboledas que servían de retiro campestre cerca del casco viejo.",
+    destacados: [
+      "Fachadas neoclásicas y balcones de hierro forjado",
+      "Galerías de transición colonial-republicana",
+      "Jardines elevados y vistas hacia la ciudad blanca"
+    ]
   },
   {
     id: "musef-etnografia-1",
@@ -602,8 +708,16 @@ export const CARTAS_MOCK = [
     pista: "Calle España Nº 74 · Sala Principal",
     iconoPista: "diversity_3",
     qrCodigo: "RUTA-BLANCA-MUSEF-1",
-    imagen: "/cartas/etmografia.jpeg",
-    historiaCorta: "Museo Nacional de Etnografía y Folklore (MUSEF). Resguarda máscaras rituales, vestimentas ceremoniales y la memoria viva de las culturas bolivianas."
+    imagen: "/cartas/etnografia1.jpeg",
+    direccion: "Calle España Nº 74",
+    horario: "Mar - Sáb: 09:00 - 17:00",
+    historiaCorta: "Museo Nacional de Etnografía y Folklore (MUSEF), custodio de máscaras rituales y la memoria viva de las culturas bolivianas.",
+    informacionDetallada: "La sede de Sucre del MUSEF funciona en una elegante casona patrimonial en la histórica Calle España, a pasos de la Plaza 25 de Mayo. Sus salas principales permiten comprender el profundo simbolismo de las máscaras festivas y rituales de tierras altas y bajas, así como la cosmovisión andina y amazónica reflejada en la vestimenta ceremonial, la música autóctona y las danzas patrimoniales.",
+    destacados: [
+      "Colección de máscaras ceremoniales de la Diablada y Morenada",
+      "Arte plumario sagrado de culturas amazónicas y chaqueñas",
+      "Patio central restaurado con arquería colonial"
+    ]
   },
   {
     id: "musef-etnografia-2",
@@ -617,7 +731,15 @@ export const CARTAS_MOCK = [
     iconoPista: "palette",
     qrCodigo: "RUTA-BLANCA-MUSEF-2",
     imagen: "/cartas/etnografia2.jpeg",
-    historiaCorta: "Segunda reliquia del Museo de Etnografía y Folklore, dedicada a los tejidos ancestrales, cerámica ritual y expresiones folklóricas de Chuquisaca."
+    direccion: "Calle España Nº 74",
+    horario: "Mar - Sáb: 09:00 - 17:00",
+    historiaCorta: "Segunda reliquia del Museo de Etnografía y Folklore, dedicada a los tejidos ancestrales, cerámica y tradiciones de Chuquisaca.",
+    informacionDetallada: "A través de su galería textil y etnohistórica, el MUSEF muestra cómo los textiles bolivianos actúan como verdaderos libros visuales donde las comunidades registran su entorno, su identidad territorial y sus mitos. La exhibición incluye aguayos ceremoniales, chuspas, cerámica precolombina y piezas numismáticas vinculadas a la historia de Charcas.",
+    destacados: [
+      "Tejidos ancestrales y simbolismo textil de Chuquisaca",
+      "Cerámica prehispánica y herramientas rituales",
+      "Archivo etnohistórico y salas interactivas"
+    ]
   },
   {
     id: "cementerio-general",
@@ -631,7 +753,15 @@ export const CARTAS_MOCK = [
     iconoPista: "location_on",
     qrCodigo: "RUTA-BLANCA-CEM-1892",
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuAhPaU2WUwsQ4lk5xEhglxgPqdGA3RKFf5foN06xZyXDiQLV0ILgsseml0ZDAc9rbwjQKhu5bWmdZazseSJwdvQNVbxuIAkJNTci0hXx-N4oDHdkbO42yx1mRaFjO9G9VQ5UK8OvNFQOt6HsORRdonvcKH0ubYf8_Hqr4Ro1TndeMInfEt6WG-QS5xIQLxrGe-zrs7l8dVzojBA160ej5qqRa5hxbCt8uduZXI2Afo",
-    historiaCorta: "Custodio de presidentes, príncipes y poetas. Sus senderos arbolados guardan los secretos más profundos y los sepulcros de líderes de la República."
+    direccion: "Final Calle Loa, Zona Cementerio",
+    horario: "Lun - Dom: 08:00 - 17:30",
+    historiaCorta: "Museo a cielo abierto custodio de presidentes, príncipes y poetas entre jardines de cipreses centenarios.",
+    informacionDetallada: "Inaugurado en el siglo XIX con un diseño inspirado en los grandes cementerios jardín europeos, el Cementerio General de Sucre alberga esculturas en mármol de Carrara y mausoleos neoclásicos y neogóticos. En sus galerías y criptas descansan numerosos presidentes de Bolivia, héroes de la Guerra del Pacífico y del Acre, además de los Príncipes de La Glorieta.",
+    destacados: [
+      "Mausoleos presidenciales y criptas de próceres republicanos",
+      "Mausoleo de los Príncipes de La Glorieta",
+      "Paseos de cipreses centenarios y escultura funeraria"
+    ]
   },
   {
     id: "castillo-glorieta",
@@ -644,8 +774,16 @@ export const CARTAS_MOCK = [
     pista: "Ruta de los Príncipes",
     iconoPista: "explore",
     qrCodigo: "RUTA-BLANCA-GLORIETA-1898",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuB4zd-nmKZzG9xa98LJUg1z342tmUMwZEmJe1D4AcCYGOarmCo_hjRo6Q3AXhSXZOlZ6ZE3DA9Lin0QLluJ-93qZunZfVxOq5I7Z1lx_klw893OcBJJ6doTZkcUK_QBHbnfEjVwC_tIRgP1Ks1-IM8fhTflauOsvObSRKM-siyVlFQ40lYFLQIL9SmmOruLculrEHSxhXIfrwTXFwjPAJ58QH5L3jrtEl9W0rcM3ug",
-    historiaCorta: "Único principado de Bolivia otorgado por el Papa León XIII. Combina arquitectura gótica, bizantina, árabe y renacentista."
+    imagen: "/museos/glorieta.jpeg",
+    direccion: "Carretera a Yotala Km 5",
+    horario: "Mar - Dom: 09:00 - 16:30",
+    historiaCorta: "Único principado de Bolivia otorgado por el Papa León XIII. Combina arquitectura gótica, bizantina, árabe y renacentista.",
+    informacionDetallada: "Levantado a finales del siglo XIX por Francisco Argandoña y Clotilde Urioste, el Castillo de La Glorieta es una joya arquitectónica única en Sudamérica. Cada torre y salón reproduce estilos distintos —desde cúpulas bizantinas hasta minaretes árabes y vitrales góticos— rodeados de jardines diseñados por paisajistas europeos.",
+    destacados: [
+      "Torreón del Príncipe con vista al valle de Yotala",
+      "Salón de Recepciones y capilla de estilo gótico",
+      "Galería de retratos de los Príncipes de La Glorieta"
+    ]
   },
   {
     id: "catedral-metropolitana",
@@ -658,8 +796,16 @@ export const CARTAS_MOCK = [
     pista: "Torre de la Catedral",
     iconoPista: "church",
     qrCodigo: "RUTA-BLANCA-CAT-1559",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuDj0qwOSE1Va28E5Hrx2kNZA9hr3TP1NkdaWrxEg8MjiOehQYd2EzPL2xin5pZMUVUFnQQNeKLE0beZC1Dwe7Qbb6yAkSW1iAwY_IUXT0aXhO1Rdi_UGqSQYRqlO6OdfSzJXw2EDJf020n7E9Zl1J_6ogBp62osOXeAJRAvLay4dSvXteE_9X-SAQ44NJ6YEbOBHfgsk6AYoh6_zk3NzfJbntM-v9-6oEf0-fVqHus",
-    historiaCorta: "Su torre campanario alberga relojes históricos y joyas religiosas invaluables como la Virgen de Guadalupe engarzada en perlas y rubíes."
+    imagen: "/museos/catedral.jpeg",
+    direccion: "Calle Nicolás Ortiz Nº 61 (Plaza 25 de Mayo)",
+    horario: "Lun - Vie: 10:00 - 17:00",
+    historiaCorta: "Su torre campanario alberga relojes históricos y el museo guarda la Virgen de Guadalupe engarzada en perlas y rubíes.",
+    informacionDetallada: "Iniciada en 1551 y ampliada durante los siglos XVI y XVII, la Catedral Basílica de Nuestra Señora de Guadalupe combina detalles renacentistas, barrocos y neoclásicos. Su Museo de Arte Sacro alberga una colección de orfebrería en oro y plata de Potosí, vestimentas bordadas con hilos de oro y la venerada imagen de la Virgen de Guadalupe pintada por Fray Diego de Ocaña.",
+    destacados: [
+      "Imagen enjoyada de la Virgen de Guadalupe (1601)",
+      "Custodia de oro y pedrería y relicarios de plata potosina",
+      "Torre del campanario con vistas a la Plaza 25 de Mayo"
+    ]
   },
   {
     id: "parque-cretacico",
@@ -672,7 +818,15 @@ export const CARTAS_MOCK = [
     pista: "Acantilado Cal Orck'o",
     iconoPista: "pets",
     qrCodigo: "RUTA-BLANCA-DINO-68M",
-    imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuCjpFCmwe14ldYgNVQEWbeqE4JhpZX2HGQf8EI8SWZWCyr3Tat0F1V8RCmzvrPnyh7f-ZoJKxEYK-HR91iPYW2AciHQspz6AtQsqgdzrU9WruH_UhKqRvPBfwTMy1fNJFYBiuxkC7PL_EHV-J7i1xzvt5iiFtum8bm_G-JCwnOlDrCDoSFhvYiLAIpY_8G_LV8DJHJxRF44x4bp_MZlPMgkxs7GYAFwCn4gEXACwKc",
-    historiaCorta: "El yacimiento de huellas de dinosaurio más grande del planeta. Un viaje geológico de 68 millones de años en el corazón de Chuquisaca."
+    imagen: "/museos/cretacico.jpeg",
+    direccion: "Carretera a Cochabamba Km 5",
+    horario: "Mar - Dom: 09:00 - 17:00",
+    historiaCorta: "El yacimiento de huellas de dinosaurio más grande del planeta. Un viaje geológico de 68 millones de años en Chuquisaca.",
+    informacionDetallada: "Descubierto en la cantera de Cal Orck'o, este farallón calizo casi vertical conserva más de 12.000 huellas pertenecientes a cerca de 300 dinosaurios de al menos ocho especies distintas del Cretácico Tardío. El parque cuenta con un museo paleontológico, miradores telescópicos y réplicas científicas a escala real.",
+    destacados: [
+      "Pared vertical de Cal Orck'o con huellas de hace 68 millones de años",
+      "Réplica de Titanosaurio de 36 metros de longitud",
+      "Paseo guiado hasta la base del farallón fósil"
+    ]
   }
 ]

@@ -3,8 +3,10 @@
  * EscanerView.vue
  * Vista inmersiva a pantalla completa (100dvh) con acceso real a la cámara trasera del dispositivo
  * mediante WebRTC (getUserMedia) y decodificación de códigos QR en tiempo real con jsQR.
- * Soporta tanto el modo local (cartas vinculadas por qrCodigo/id) como el canje en servidor Supabase
- * (redeem_scan y deeplink /q/<token>) cuando VITE_SUPABASE_* está configurado.
+ * Incluye control real de linterna (torch), entrada manual de respaldo y visor de QRs de prueba.
+ *
+ * Con Supabase configurado (VITE_SUPABASE_*) el canje lo valida el servidor (redeem_scan: token,
+ * GPS y recompensas) y los QRs de prueba se ocultan. Sin Supabase (modo demo) todo es local.
  */
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import jsQR from 'jsqr'
@@ -58,7 +60,7 @@ const setFeedback = (texto, tipo = 'error', duracionMs = 3000) => {
 }
 
 // Buscar carta coincidente por código QR o ID (acepta texto directo o URL /q/<token>)
-const buscarCartaLocalPorQR = (textoCrudo) => {
+const buscarCartaPorQR = (textoCrudo) => {
   if (!textoCrudo) return null
   const limpio = textoCrudo.trim()
   let token = limpio
@@ -85,7 +87,8 @@ const buscarCartaLocalPorQR = (textoCrudo) => {
   ) || null
 }
 
-// Posición actual para validación geográfica en Supabase
+// --- Modo servidor ----------------------------------------------------------------
+// Posición actual para validar que el usuario está en el lugar (si la niega, el servidor responde no_location)
 const obtenerPosicion = () =>
   new Promise((resolve) => {
     if (!('geolocation' in navigator)) return resolve({})
@@ -96,75 +99,80 @@ const obtenerPosicion = () =>
     )
   })
 
-// Procesar texto decodificado de un QR (soporta modo Supabase y modo local)
+const avisar = (texto, ms = 3500, tipo = 'error') => {
+  bloqueadoTemporalmente = true
+  setFeedback(texto, tipo, ms)
+  setTimeout(() => {
+    bloqueadoTemporalmente = false
+  }, ms)
+}
+
+/** Canjea en el servidor el texto leído (URL `/q/<token>` o token suelto). Devuelve true si se resolvió. */
+const canjearEnServidor = async (texto) => {
+  const token = extractToken(texto)
+  if (!token) {
+    avisar('Este código no pertenece a La Ruta Blanca.')
+    return false
+  }
+  procesando.value = true
+  bloqueadoTemporalmente = true
+  setFeedback('Validando código…', 'info', 0)
+  try {
+    const res = await redeemScan(token, await obtenerPosicion())
+    if (res.result === 'success' || res.result === 'already_owned') {
+      if ('vibrate' in navigator) navigator.vibrate(120)
+      detenerCamara()
+      setFeedback('', 'info', 0)
+      emit('scan-success', {
+        servidor: true,
+        yaObtenida: res.result === 'already_owned',
+        id: res.card?.id ?? res.card_id ?? res.site.id,
+        nombre: res.site.name,
+        puntos: res.points_earned ?? 0,
+        totalPuntos: res.total_points,
+        rango: res.rank_name
+      })
+      return true
+    }
+    if (res.result === 'too_far') {
+      avisar(`Estás a ${res.distance_m} m. Acércate a menos de ${res.radius_m} m de la placa.`, 5000)
+    } else {
+      avisar(MENSAJES_ESCANEO[res.result] ?? 'No se pudo validar el código.', 4000)
+    }
+  } catch {
+    codigoManual.value = token
+    mostrarManual.value = true
+    avisar('No pudimos validar el código. Revisa tu conexión y pulsa Validar para reintentar.', 5000)
+  } finally {
+    procesando.value = false
+  }
+  return false
+}
+
+// Procesar texto decodificado de un QR
 const manejarQRDetectado = async (texto) => {
   if (bloqueadoTemporalmente || procesando.value || !texto) return false
 
-  // 1. Verificar coincidencia directa en catálogo local
-  const cartaLocal = buscarCartaLocalPorQR(texto)
-  if (cartaLocal && !isSupabaseConfigured) {
+  if (isSupabaseConfigured) {
+    return await canjearEnServidor(texto)
+  }
+
+  const carta = buscarCartaPorQR(texto)
+  if (carta) {
     bloqueadoTemporalmente = true
     if ('vibrate' in navigator) navigator.vibrate(120)
     detenerCamara()
     emit('scan-success', {
-      id: cartaLocal.id,
-      codigo: cartaLocal.qrCodigo,
-      nombre: cartaLocal.titulo,
-      puntos: cartaLocal.puntosGanados,
-      imagen: cartaLocal.imagen
+      id: carta.id,
+      codigo: carta.qrCodigo,
+      nombre: carta.titulo,
+      puntos: carta.puntosGanados,
+      imagen: carta.imagen
     })
     return true
   }
 
-  // 2. Si Supabase está configurado, intentar canje contra el servidor
-  if (isSupabaseConfigured) {
-    const token = extractToken(texto)
-    if (!token) {
-      bloqueadoTemporalmente = true
-      setFeedback(`QR "${texto.slice(0, 28)}" no pertenece a La Ruta Blanca.`, 'error')
-      setTimeout(() => { bloqueadoTemporalmente = false }, 2500)
-      return false
-    }
-
-    procesando.value = true
-    bloqueadoTemporalmente = true
-    setFeedback('Validando código…', 'info', 0)
-    try {
-      const res = await redeemScan(token, await obtenerPosicion())
-      if (res.result === 'success') {
-        setFeedback('', 'info', 0)
-        if ('vibrate' in navigator) navigator.vibrate(120)
-        detenerCamara()
-        emit('scan-success', {
-          id: res.card?.id ?? res.site.id,
-          nombre: res.site.name,
-          puntos: res.points_earned
-        })
-        return true
-      } else if (res.result === 'already_owned') {
-        setFeedback(`Ya descubriste ${res.site?.name ?? 'este lugar'}.`, 'info')
-      } else if (res.result === 'too_far') {
-        setFeedback(`Estás a ${res.distance_m} m. Acércate a menos de ${res.radius_m} m de la placa.`, 'error')
-      } else {
-        setFeedback(MENSAJES_ESCANEO[res.result] ?? 'No se pudo validar el código.', 'error')
-      }
-    } catch {
-      codigoManual.value = token
-      mostrarManual.value = true
-      setFeedback('No pudimos validar el código. Revisa tu conexión y pulsa Validar.', 'error')
-    } finally {
-      procesando.value = false
-      setTimeout(() => { bloqueadoTemporalmente = false }, 2500)
-    }
-    return false
-  }
-
-  // 3. No coincide en modo demo
-  bloqueadoTemporalmente = true
-  setFeedback(`QR "${texto.slice(0, 28)}" no pertenece a La Ruta Blanca.`, 'error')
-  setTimeout(() => {
-    bloqueadoTemporalmente = false
-  }, 2500)
+  avisar(`QR "${texto.slice(0, 28)}" no pertenece a La Ruta Blanca.`, 2500)
   return false
 }
 
@@ -279,7 +287,7 @@ const toggleLinterna = async () => {
 
 const enviarCodigoManual = () => {
   if (!codigoManual.value.trim()) return
-  bloqueadoTemporalmente = false
+  bloqueadoTemporalmente = false // permite reintentar a mano aunque haya un aviso en pantalla
   manejarQRDetectado(codigoManual.value.trim())
 }
 
@@ -298,11 +306,11 @@ const onVisibilidad = () => {
 
 onMounted(async () => {
   document.addEventListener('visibilitychange', onVisibilidad)
+  // Llegada desde una placa QR (/q/<token>): se canjea primero y la cámara arranca después,
+  // para no pedir permiso de cámara a quien ya escaneó con la del teléfono.
   const tokenEnlace = consumePendingToken()
-  const canjeado = tokenEnlace ? await manejarQRDetectado(tokenEnlace) : false
-  if (!canjeado) {
-    iniciarCamara()
-  }
+  if (tokenEnlace && isSupabaseConfigured && (await canjearEnServidor(tokenEnlace))) return
+  iniciarCamara()
 })
 
 onBeforeUnmount(() => {
@@ -472,7 +480,7 @@ onBeforeUnmount(() => {
           autocomplete="off"
           autocapitalize="off"
           spellcheck="false"
-          placeholder="Ej: RUTA-BLANCA-REC-1601"
+          :placeholder="isSupabaseConfigured ? 'Pega el enlace o código de la placa…' : 'Ej: RUTA-BLANCA-REC-1601'"
           aria-label="Código o enlace de la placa QR"
           class="flex-1 min-w-0 bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-crimson"
         />
@@ -498,6 +506,7 @@ onBeforeUnmount(() => {
         </button>
 
         <button
+          v-if="!isSupabaseConfigured"
           type="button"
           @click="emit('open-qr-generator')"
           class="px-4 py-2.5 rounded-full bg-crimson text-white flex items-center gap-1.5 text-xs font-bold active:scale-95 transition-all shadow-lg"
@@ -543,7 +552,12 @@ onBeforeUnmount(() => {
             </button>
           </div>
           <p class="text-[11px] text-gray-600 mt-1 leading-relaxed">
-            Busca las placas con el sello carmesí de <strong>La Ruta Blanca</strong> en los museos, o abre <strong>"QRs de prueba"</strong> para generar y escanear los códigos vinculados a tus cartas.
+            <template v-if="isSupabaseConfigured">
+              Busca las placas con el sello carmesí de <strong>La Ruta Blanca</strong> en los museos y apunta la cámara al código QR. Debes estar en el lugar.
+            </template>
+            <template v-else>
+              Busca las placas con el sello carmesí de <strong>La Ruta Blanca</strong> en los museos, o abre <strong>"QRs de prueba"</strong> para generar y escanear los códigos vinculados a tus cartas.
+            </template>
           </p>
         </div>
       </div>
