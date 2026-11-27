@@ -126,7 +126,7 @@ export const MUSEOS_SUELTOS_MOCK = [
     icono: "diversity_3",
     puntos: 120,
     rareza: "Rara",
-    imagen: "/cartas/etmografia.jpeg",
+    imagen: "/cartas/etnografia1.jpeg",
     descripcion: "Instalado en una señorial casona virreinal, custodia máscaras ceremoniales bolivianas, plumería sagrada, cerámica precolombina y numismática.",
     coordenadas: { lat: -19.0488, lng: -65.2605 },
     topPercent: "52%",
@@ -602,7 +602,7 @@ export const CARTAS_MOCK = [
     pista: "Calle España Nº 74 · Sala Principal",
     iconoPista: "diversity_3",
     qrCodigo: "RUTA-BLANCA-MUSEF-1",
-    imagen: "/cartas/etmografia.jpeg",
+    imagen: "/cartas/etnografia1.jpeg",
     historiaCorta: "Museo Nacional de Etnografía y Folklore (MUSEF). Resguarda máscaras rituales, vestimentas ceremoniales y la memoria viva de las culturas bolivianas."
   },
   {

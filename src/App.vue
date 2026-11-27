@@ -5,6 +5,10 @@
  * Orquesta las 4 vistas mediante renderizado dinámico <component :is="...">,
  * gestiona el estado reactivo persistente en localStorage (cartas desbloqueadas y puntos),
  * la revelación inmediata tras escanear un QR y el generador de QRs de prueba.
+ *
+ * Con Supabase configurado, el servidor es la fuente de verdad: puntos, rango y cartas
+ * desbloqueadas vienen de la base de datos (cargada antes de montar, ver services/hydrate.js)
+ * y de redeem_scan; localStorage y los QRs de prueba solo se usan en modo demo.
  */
 import { ref, computed, watch } from 'vue'
 import HeaderNav from './components/HeaderNav.vue'
@@ -16,14 +20,15 @@ import MapaView from './views/MapaView.vue'
 import EscanerView from './views/EscanerView.vue'
 import ColeccionView from './views/ColeccionView.vue'
 import { hasPendingToken } from './services/deeplink.js'
+import { isSupabaseConfigured } from './lib/supabase.js'
 import { USER_INITIAL_STATE, CARTAS_MOCK, MONUMENTOS_MOCK, MUSEOS_SUELTOS_MOCK } from './data/mockData.js'
 
 const STORAGE_KEY = 'ruta_blanca_progreso_v1'
 
-<<<<<<< HEAD
 // Cargar progreso guardado en localStorage o inicializar con estado base
 const cargarProgresoInicial = () => {
   try {
+    if (isSupabaseConfigured) throw new Error('modo servidor')
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
@@ -32,7 +37,7 @@ const cargarProgresoInicial = () => {
       }
     }
   } catch (e) {
-    console.warn('No se pudo leer localStorage:', e)
+    if (!isSupabaseConfigured) console.warn('No se pudo leer localStorage:', e)
   }
   return {
     puntos: USER_INITIAL_STATE.puntos,
@@ -67,11 +72,12 @@ const calcularRango = (pts) => {
 const usuario = ref({
   ...USER_INITIAL_STATE,
   puntos: progresoGuardado.puntos,
-  rango: calcularRango(progresoGuardado.puntos)
+  rango: isSupabaseConfigured ? USER_INITIAL_STATE.rango : calcularRango(progresoGuardado.puntos)
 })
 
 // Guardar automáticamente en localStorage cuando cambie el progreso
 const guardarProgreso = () => {
+  if (isSupabaseConfigured) return
   try {
     const payload = {
       puntos: usuario.value.puntos,
@@ -92,12 +98,8 @@ watch(
 )
 
 // Vista actual reactiva: 'explorar' | 'mapa' | 'escaner' | 'coleccion'
-const vistaActual = ref('explorar')
-=======
-// Vista inicial: Pantalla principal Explorar (sin mapa)
 // (o directo al escáner si se llegó desde una placa QR: EscanerView canjea el token)
 const vistaActual = ref(hasPendingToken() ? 'escaner' : 'explorar')
->>>>>>> 8812a9a30762b90271238441294b6ce66bd625d9
 
 // Museo enfocado al abrir la pestaña Mapa
 const museoEnMapa = ref(MONUMENTOS_MOCK[0])
@@ -149,6 +151,33 @@ const onLocateMuseum = (item) => {
  * Desbloquea la carta, suma puntos, guarda en localStorage y muestra la carta ganada.
  */
 const onScanSuccess = (datosQR) => {
+  // Resultado ya validado por el servidor (redeem_scan): solo se refleja en pantalla
+  if (datosQR.servidor) {
+    const cartaServidor = cartas.value.find((c) => c.id === datosQR.id)
+    if (!datosQR.yaObtenida) {
+      const hoy = new Date()
+      usuario.value.puntos = datosQR.totalPuntos ?? usuario.value.puntos + datosQR.puntos
+      if (datosQR.rango) usuario.value.rango = datosQR.rango
+      if (cartaServidor) {
+        cartaServidor.desbloqueada = true
+        cartaServidor.fechaObtencion = `Hallado hoy ${hoy.getDate()}/${hoy.getMonth() + 1}`
+      }
+    }
+    cartaYaObtenida.value = Boolean(datosQR.yaObtenida)
+    mostrarNotificacion(
+      datosQR.yaObtenida
+        ? `Ya posees la carta: ${datosQR.nombre}`
+        : `¡Reliquia desbloqueada: ${datosQR.nombre}! +${datosQR.puntos} PTS`
+    )
+    if (cartaServidor) {
+      cartaRevelada.value = cartaServidor
+      modalRevelacionAbierto.value = true
+    } else {
+      cambiarVista('coleccion')
+    }
+    return
+  }
+
   const carta = cartas.value.find(
     (c) => c.id === datosQR.id || c.qrCodigo === datosQR.codigo
   )
