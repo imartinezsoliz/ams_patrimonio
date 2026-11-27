@@ -35,7 +35,7 @@ on conflict (id) do update set
   name = excluded.name, category = excluded.category, address = excluded.address,
   description = excluded.description, hours = excluded.hours, lat = excluded.lat,
   lng = excluded.lng, points = excluded.points, rarity = excluded.rarity,
-  icon = excluded.icon, image_url = excluded.image_url, kind = excluded.kind,
+  icon = excluded.icon, image_url = case when public.sites.image_url like '%/storage/v1/object/public/site-images/%' then public.sites.image_url else excluded.image_url end, kind = excluded.kind,
   map_top_pct = excluded.map_top_pct, map_left_pct = excluded.map_left_pct;
 
 insert into public.routes (id, title, description, category, distance_km, est_minutes, difficulty, icon, image_url, badge_text, badge_type) values
@@ -45,7 +45,7 @@ insert into public.routes (id, title, description, category, distance_km, est_mi
 on conflict (id) do update set
   title = excluded.title, description = excluded.description, category = excluded.category,
   distance_km = excluded.distance_km, est_minutes = excluded.est_minutes,
-  difficulty = excluded.difficulty, icon = excluded.icon, image_url = excluded.image_url,
+  difficulty = excluded.difficulty, icon = excluded.icon, image_url = case when public.routes.image_url like '%/storage/v1/object/public/site-images/%' then public.routes.image_url else excluded.image_url end,
   badge_text = excluded.badge_text, badge_type = excluded.badge_type;
 
 delete from public.route_stops;
@@ -75,7 +75,28 @@ on conflict (id) do update set
   site_id = excluded.site_id, title = excluded.title, category = excluded.category,
   category_label = excluded.category_label, rarity = excluded.rarity, hint = excluded.hint,
   hint_icon = excluded.hint_icon, short_history = excluded.short_history,
-  image_url = excluded.image_url;
+  is_draft = false, image_url = case when public.cards.image_url like '%/storage/v1/object/public/site-images/%' then public.cards.image_url else excluded.image_url end;
+
+
+-- Draft cards (auto-generated placeholders; is_draft = true). Never overwritten by re-seeding.
+insert into public.cards (id, site_id, title, category, category_label, rarity, hint, hint_icon, short_history, image_url, is_draft) values
+  ('museo-asur', 'museo-asur', 'Museo de Arte Indígena (ASUR)', 'mistica', 'Textil & Indígena', 'Rara'::public.rarity, 'Pasaje Iturricha Nº 314 (La Recoleta)', 'location_on', 'Exhibición de arte textil tradicional de las culturas Jalq''a y Tarabuco, mostrando cosmovisiones andinas con telares vivos y bordados ancestrales.', null, true),
+  ('musef', 'musef', 'Museo Nacional de Etnografía y Folklore (MUSEF)', 'mistica', 'Etnográfico', 'Rara'::public.rarity, 'Calle España Nº 74', 'location_on', 'Instalado en una señorial casona virreinal, custodia máscaras ceremoniales bolivianas, plumería sagrada, cerámica precolombina y numismática.', null, true),
+  ('museo-gutierrez-valenzuela', 'museo-gutierrez-valenzuela', 'Museo Universitario Dr. Alfredo Gutiérrez Valenzuela', 'colonial', 'Bellas Artes', 'Común'::public.rarity, 'Plaza 25 de Mayo esq. Calvo', 'location_on', 'Colección señorial de porcelanas de Sèvres, cristal de Baccarat, muebles virreinales de madera taraceada y lienzos de maestros europeos y coloniales.', null, true),
+  ('museo-catedral', 'museo-catedral', 'Museo de la Catedral', 'colonial', 'Arte Sacro', 'Épica'::public.rarity, 'Calle Nicolás Ortiz Nº 61', 'location_on', 'Tesoros litúrgicos más ricos de América del Sur. Custodia la imagen enjoyada de la Virgen de Guadalupe, orfebrería de plata potosina y custodias coloniales.', null, true),
+  ('museo-la-recoleta', 'museo-la-recoleta', 'Museo Franciscano de La Recoleta', 'colonial', 'Conventual', 'Rara'::public.rarity, 'Plaza Pedro de Anzúrez s/n', 'location_on', 'Convento franciscano de 1601 con claustros de naranjos centenarios, sillería tallada en cedro y una terraza panorámica con mirador a la ciudad.', null, true),
+  ('convento-santa-clara', 'convento-santa-clara', 'Museo del Convento de Santa Clara', 'colonial', 'Arte Sacro', 'Rara'::public.rarity, 'Calle Calvo Nº 212', 'location_on', 'Fundado en 1639 por las monjas clarisas. Exhibe pintura barroca mestiza de Bernardo Bitti y Melchor Pérez de Holguín, instrumentos de coro y criptas.', null, true),
+  ('museo-casa-del-tesoro', 'museo-casa-del-tesoro', 'Museo Casa del Tesoro', 'colonial', 'Histórico & Numismática', 'Común'::public.rarity, 'Calle San Alberto Nº 156', 'location_on', 'Antiguo tesoro real y casona virreinal que conserva lingotes, monedas de plata macuquinas de la Real Casa de Moneda y relicarios coloniales.', null, true),
+  ('museo-del-pan', 'museo-del-pan', 'Museo del Pan', 'mistica', 'Tradición Culinaria', 'Común'::public.rarity, 'Calle San Alberto Nº 245', 'location_on', 'Homenaje a los legendarios hornos de leña coloniales y a las maestras panificadoras de Sucre, con la historia del pan de batalla, tantawawas y empanadas.', null, true),
+  ('museo-del-chocolate', 'museo-del-chocolate', 'Museo del Chocolate', 'mistica', 'Gastronomía', 'Común'::public.rarity, 'Calle Calvo Nº 284', 'location_on', 'La tradición chocolatera de Sucre. Un recorrido interactivo desde la semilla de cacao silvestre amazónico hasta las famosas fábricas y bombones chuquisaqueños.', null, true),
+  ('san-felipe-neri', 'san-felipe-neri', 'San Felipe Neri', 'colonial', 'Colonial', 'Común'::public.rarity, 'Terrazas Coloniales y Cúpulas', 'location_on', 'Azotea embaldosada con tejas de barro cocido y barandales que brindan una perspectiva única de los campanarios barrocos de la ciudad blanca.', null, true),
+  ('mirador-santa-teresa', 'mirador-santa-teresa', 'Mirador Santa Teresa', 'colonial', 'Colonial', 'Común'::public.rarity, 'Torreón y Balcones de Clausura', 'location_on', 'Mirador elevado del antiguo convento carmelita de clausura con vistas privilegiadas hacia los cerros tutelares Sica Sica y Churuquella.', null, true),
+  ('residencia-severo-fernandez', 'residencia-severo-fernandez', 'Residencia Severo Fernández de Alonso', 'presidencial', 'Presidencial', 'Común'::public.rarity, 'Mansión del 22° Presidente de Bolivia', 'location_on', 'Imponente arquitectura señorial de finales del siglo XIX perteneciente al mandatario que gobernó durante la convulsa Guerra Federal.', null, true),
+  ('residencia-jose-gutierrez', 'residencia-jose-gutierrez', 'Residencia José Gutiérrez Guerra', 'presidencial', 'Presidencial', 'Común'::public.rarity, 'El Último Presidente Liberal', 'location_on', 'Residencia histórica del presidente economista José Gutiérrez Guerra (''El Último Oligarca''), testigo de la bonanza del estaño.', null, true),
+  ('palacete-la-florida', 'palacete-la-florida', 'Palacete de La Florida', 'presidencial', 'Presidencial', 'Común'::public.rarity, 'Residencia Campestre de Aniceto Arce', 'location_on', 'Lujosa villa y jardines versallescos construidos por el presidente Aniceto Arce, pionero de los ferrocarriles en Bolivia.', null, true),
+  ('museo-costumbrista', 'museo-costumbrista', 'Museo Costumbrista', 'colonial', 'Colonial', 'Común'::public.rarity, 'Tradiciones y Vida Criolla Colonial', 'location_on', 'Colección viva de atuendos de época, instrumentos de salón, bargueños coloniales y representaciones de la vida aristocrática chuquisaqueña.', null, true),
+  ('palacete-guereo', 'palacete-guereo', 'Palacete Guereo', 'colonial', 'Colonial', 'Común'::public.rarity, 'Mansión Señorial de Transición Colonial', 'location_on', 'Palacete señorial de amplias terrazas y arcos coloniales, rodeado de frondosos jardines botánicos andinos.', null, true)
+on conflict (id) do nothing;
 
 insert into public.fun_facts (id, position, badge, icon, text_prefix, text_highlight, text_suffix, location, gradient) values
   ('dato-recoleta', 1, 'DATO DEL DÍA', 'park', '¿Sabías que el milenario cedro de ', 'La Recoleta', ' tiene siglos de historia y custodia el mirador más icónico de la ciudad blanca?', 'Mirador de La Recoleta', 'from-[#BA0C2F] via-[#8C0720] to-[#002855]'),

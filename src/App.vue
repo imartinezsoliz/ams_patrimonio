@@ -15,12 +15,14 @@ import ExplorarView from './views/ExplorarView.vue'
 import MapaView from './views/MapaView.vue'
 import EscanerView from './views/EscanerView.vue'
 import ColeccionView from './views/ColeccionView.vue'
+import { hasPendingToken } from './services/deeplink.js'
 import { USER_INITIAL_STATE, CARTAS_MOCK, MONUMENTOS_MOCK, MUSEOS_SUELTOS_MOCK } from './data/mockData.js'
 
 const usuario = ref({ ...USER_INITIAL_STATE })
 
 // Vista inicial: Pantalla principal Explorar (sin mapa)
-const vistaActual = ref('explorar')
+// (o directo al escáner si se llegó desde una placa QR: EscanerView canjea el token)
+const vistaActual = ref(hasPendingToken() ? 'escaner' : 'explorar')
 
 // Museo enfocado al abrir la pestaña Mapa desde Explorar o Rutas
 const museoEnMapa = ref(MONUMENTOS_MOCK[0])

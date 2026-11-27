@@ -25,12 +25,16 @@ const categoriaSeleccionada = ref('todas')
 const cartaSeleccionada = ref(null)
 const modalAbierto = ref(false)
 
+// Totales calculados desde los datos (antes estaban fijos en 15 / 5 / 4 / 6)
+const totalCartas = CARTAS_MOCK.length
+const totalDe = (categoria) => CARTAS_MOCK.filter(c => c.categoria === categoria).length
+
 // Categorías disponibles con conteo reactivo
 const categorias = [
-  { id: 'todas', label: 'Todas', icono: 'style', total: 15 },
-  { id: 'colonial', label: 'Coloniales', icono: 'account_balance', total: 5 },
-  { id: 'presidencial', label: 'Presidenciales', icono: 'flag', total: 4 },
-  { id: 'mistica', label: 'Místicas', icono: 'auto_stories', total: 6 },
+  { id: 'todas', label: 'Todas', icono: 'style', total: totalCartas },
+  { id: 'colonial', label: 'Coloniales', icono: 'account_balance', total: totalDe('colonial') },
+  { id: 'presidencial', label: 'Presidenciales', icono: 'flag', total: totalDe('presidencial') },
+  { id: 'mistica', label: 'Místicas', icono: 'auto_stories', total: totalDe('mistica') },
 ]
 
 // Filtrado computado
@@ -47,7 +51,7 @@ const totalCartasDescubiertas = computed(() => {
 })
 
 const porcentajeColeccion = computed(() => {
-  return Math.round((totalCartasDescubiertas.value / 15) * 100)
+  return totalCartas ? Math.round((totalCartasDescubiertas.value / totalCartas) * 100) : 0
 })
 
 const abrirDetalles = (carta) => {
@@ -65,7 +69,7 @@ const abrirDetalles = (carta) => {
       <div class="flex items-center justify-between">
         <span class="text-[11px] text-primary uppercase tracking-widest font-extrabold flex items-center gap-1.5">
           <span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse" aria-hidden="true"></span>
-          TUS RELIQUIAS COLECCIONADAS ({{ totalCartasDescubiertas }}/15)
+          TUS RELIQUIAS COLECCIONADAS ({{ totalCartasDescubiertas }}/{{ totalCartas }})
         </span>
 
         <span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-primary text-[11px] font-bold flex items-center gap-1 shadow-xs border border-surface-container">
@@ -98,7 +102,7 @@ const abrirDetalles = (carta) => {
         </span>
 
         <span class="font-medium text-tertiary">
-          <span class="tabular-nums font-semibold">{{ 15 - totalCartasDescubiertas }}</span> por encontrar
+          <span class="tabular-nums font-semibold">{{ totalCartas - totalCartasDescubiertas }}</span> por encontrar
         </span>
       </div>
     </div>

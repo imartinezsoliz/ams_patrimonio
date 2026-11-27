@@ -48,3 +48,5 @@ Schema, RLS and seed live in `supabase/`; `supabase/seed.sql` is generated from 
 Frontend data access goes through `src/services/api.js` (`getSites`, `getRoutes`, `getCards`, `getProfile`, `redeemScan`, `extractToken`), which keeps the views' existing Spanish-keyed shapes and falls back to `mockData.js` when `VITE_SUPABASE_*` is not set. Scan rewards are decided only by the `redeem_scan` database function.
 
 At startup `src/main.js` runs `hydrateFromBackend()` (`src/services/hydrate.js`), which swaps the contents of the `mockData.js` arrays for Supabase data before mounting; views still import the mock arrays. `EscanerView` uses the real camera (`qr-scanner`), GPS and `redeemScan`. Use `npm run dev:https` to test the camera on a phone.
+
+QR links (`/q/<token>`) are captured in `main.js` by `src/services/deeplink.js`; `App.vue` then opens the scanner view, which redeems the token. Deployment is on Vercel (`vercel.json` rewrites all paths to `index.html`). Every site has a card (16 are auto-generated drafts, `cards.is_draft`); images go to the `site-images` Storage bucket via `npm run images:upload`. Details in `docs/BACKEND_SETUP.md` §5–7.

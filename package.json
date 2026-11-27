@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "seed:generate": "node scripts/generate-seed.mjs",
     "qr:generate": "node scripts/generate-qr.mjs",
-    "dev:https": "vite --mode https"
+    "dev:https": "vite --mode https",
+    "images:upload": "node scripts/upload-images.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",
