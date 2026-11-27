@@ -5,7 +5,15 @@
  * Diseñada para búsqueda física de placas patrimoniales en Sucre.
  * Incluye HUD táctico Chuquisaqueño, láser animado, control de linterna y preparado para cámara web/móvil.
  */
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
+
+// App.vue pasa `usuario` a todas las vistas; se declara para que no se renderice como atributo HTML
+defineProps({
+  usuario: {
+    type: Object,
+    default: null
+  }
+})
 
 const emit = defineEmits(['navigate', 'scan-success'])
 

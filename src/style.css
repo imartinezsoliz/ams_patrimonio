@@ -57,6 +57,20 @@
   animation: laserScan 2.4s ease-in-out infinite;
 }
 
+/* Entrada deslizante de modales (clases usadas en CardDetailModal y RutaDetalleModal) */
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-in.slide-in-from-bottom {
+  animation: slideInFromBottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Soporte para reducción de movimiento según directrices de accesibilidad */
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -70,6 +70,7 @@ export default {
         '3xl': '1.5rem',
       },
       boxShadow: {
+        'xs': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
         'subtle': '0 1px 8px rgba(0, 0, 0, 0.04)',
         'elevated': '0 8px 24px -4px rgba(186, 12, 47, 0.25)',
       }
