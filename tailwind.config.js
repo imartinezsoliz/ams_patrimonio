@@ -8,6 +8,8 @@ export default {
   theme: {
     extend: {
       colors: {
+        crimson: "#BA0C2F",
+        navy: "#002855",
         // Chuquisaca Heritage Play Color Palette
         primary: {
           DEFAULT: "#900020",
@@ -27,8 +29,8 @@ export default {
           fixed: "#E1E2E4",
         },
         surface: {
-          DEFAULT: "#F8F9FF",
-          bright: "#F8F9FF",
+          DEFAULT: "#F9FAFB",
+          bright: "#F9FAFB",
           dim: "#D0DBED",
           variant: "#D9E3F6",
           container: {
@@ -41,7 +43,7 @@ export default {
         },
         "on-surface": {
           DEFAULT: "#121C2A",
-          variant: "#5B4040",
+          variant: "#5B616E",
         },
         "on-primary": {
           DEFAULT: "#FFFFFF",
@@ -51,7 +53,7 @@ export default {
         "inverse-on-surface": "#EAF1FF",
         outline: {
           DEFAULT: "#8F6F6F",
-          variant: "#E4BDBD",
+          variant: "#E5E7EB",
         },
         error: {
           DEFAULT: "#BA1A1A",
