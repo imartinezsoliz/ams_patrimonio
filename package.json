@@ -14,13 +14,10 @@
     "seed:apply": "node scripts/seed-via-api.mjs"
   },
   "dependencies": {
-<<<<<<< HEAD
     "jsqr": "^1.4.0",
     "qrcode": "^1.5.4",
-=======
     "@supabase/supabase-js": "^2.119.2",
     "qr-scanner": "^1.4.2",
->>>>>>> 8812a9a30762b90271238441294b6ce66bd625d9
     "vue": "^3.5.13"
   },
   "devDependencies": {

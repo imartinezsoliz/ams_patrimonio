@@ -28,7 +28,6 @@ const categoriaSeleccionada = ref('todas')
 const cartaSeleccionada = ref(null)
 const modalAbierto = ref(false)
 
-<<<<<<< HEAD
 // Conteos dinámicos por categoría
 const categorias = computed(() => [
   { id: 'todas', label: 'Todas', icono: 'style', total: props.cartas.length },
@@ -36,19 +35,6 @@ const categorias = computed(() => [
   { id: 'presidencial', label: 'Presidenciales', icono: 'flag', total: props.cartas.filter(c => c.categoria === 'presidencial').length },
   { id: 'mistica', label: 'Místicas', icono: 'auto_stories', total: props.cartas.filter(c => c.categoria === 'mistica').length },
 ])
-=======
-// Totales calculados desde los datos (antes estaban fijos en 15 / 5 / 4 / 6)
-const totalCartas = CARTAS_MOCK.length
-const totalDe = (categoria) => CARTAS_MOCK.filter(c => c.categoria === categoria).length
-
-// Categorías disponibles con conteo reactivo
-const categorias = [
-  { id: 'todas', label: 'Todas', icono: 'style', total: totalCartas },
-  { id: 'colonial', label: 'Coloniales', icono: 'account_balance', total: totalDe('colonial') },
-  { id: 'presidencial', label: 'Presidenciales', icono: 'flag', total: totalDe('presidencial') },
-  { id: 'mistica', label: 'Místicas', icono: 'auto_stories', total: totalDe('mistica') },
-]
->>>>>>> 8812a9a30762b90271238441294b6ce66bd625d9
 
 // Ordenar colocando primero las cartas desbloqueadas y aplicar filtro
 const cartasFiltradas = computed(() => {
@@ -68,12 +54,8 @@ const totalPorEncontrar = computed(() => {
 })
 
 const porcentajeColeccion = computed(() => {
-<<<<<<< HEAD
   if (!props.cartas.length) return 0
   return Math.round((totalCartasDescubiertas.value / props.cartas.length) * 100)
-=======
-  return totalCartas ? Math.round((totalCartasDescubiertas.value / totalCartas) * 100) : 0
->>>>>>> 8812a9a30762b90271238441294b6ce66bd625d9
 })
 
 const abrirDetalles = (carta) => {
@@ -88,17 +70,10 @@ const abrirDetalles = (carta) => {
   <div class="flex flex-col w-full px-4 pt-2 pb-6 gap-4 select-none">
     <!-- Encabezado de Progreso de la Colección -->
     <div class="flex flex-col gap-2 pt-1">
-<<<<<<< HEAD
       <div class="flex items-center justify-between gap-2">
         <span class="text-[11px] text-crimson uppercase tracking-widest font-extrabold flex items-center gap-1.5">
           <span class="w-1.5 h-1.5 rounded-full bg-crimson animate-pulse" aria-hidden="true"></span>
           TUS RELIQUIAS ({{ totalCartasDescubiertas }}/{{ cartas.length }})
-=======
-      <div class="flex items-center justify-between">
-        <span class="text-[11px] text-primary uppercase tracking-widest font-extrabold flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse" aria-hidden="true"></span>
-          TUS RELIQUIAS COLECCIONADAS ({{ totalCartasDescubiertas }}/{{ totalCartas }})
->>>>>>> 8812a9a30762b90271238441294b6ce66bd625d9
         </span>
 
         <span class="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200/80 text-[11px] font-bold flex items-center gap-1 shadow-2xs shrink-0">
@@ -128,7 +103,6 @@ const abrirDetalles = (carta) => {
           <span class="tabular-nums font-bold text-navy">{{ totalCartasDescubiertas }}</span> descubiertas
         </span>
 
-<<<<<<< HEAD
         <button
           type="button"
           @click="emit('open-qr-generator')"
@@ -137,11 +111,6 @@ const abrirDetalles = (carta) => {
           <span class="material-symbols-outlined text-[14px]" aria-hidden="true">qr_code_2</span>
           <span>Ver QRs ({{ totalPorEncontrar }} por hallar)</span>
         </button>
-=======
-        <span class="font-medium text-tertiary">
-          <span class="tabular-nums font-semibold">{{ totalCartas - totalCartasDescubiertas }}</span> por encontrar
-        </span>
->>>>>>> 8812a9a30762b90271238441294b6ce66bd625d9
       </div>
     </div>
 

@@ -14,6 +14,9 @@ export default defineConfig(async ({ mode }) => {
 
   return {
     plugins,
+    optimizeDeps: {
+      entries: ['index.html']
+    },
     server: {
       host: true,
       port: 5173
