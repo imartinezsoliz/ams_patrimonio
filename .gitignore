@@ -26,3 +26,9 @@ Thumbs.db
 
 # Generated QR plaques (contain plaintext tokens)
 qr-output/
+
+# Vercel
+.vercel
+
+# Local photo originals (uploaded to Supabase Storage with npm run images:upload)
+images/

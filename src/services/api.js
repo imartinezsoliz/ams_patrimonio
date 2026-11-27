@@ -113,7 +113,8 @@ export const mapCard = (c, obtainedAt) => ({
   pista: c.hint,
   iconoPista: c.hint_icon,
   historiaCorta: c.short_history,
-  imagen: c.image_url,
+  // Una carta sin imagen propia usa la del lugar
+  imagen: c.image_url ?? c.sites?.image_url ?? null,
   puntosGanados: c.sites?.points,
   desbloqueada: Boolean(obtainedAt),
   fechaObtencion: obtainedAt
@@ -180,7 +181,7 @@ export async function getCards() {
   if (!isSupabaseConfigured) return CARTAS_MOCK
   await ensureSession()
   const [cards, owned] = await Promise.all([
-    supabase.from('cards').select('*, sites(points)').order('id').then(unwrap),
+    supabase.from('cards').select('*, sites(points, image_url)').order('id').then(unwrap),
     supabase.from('user_cards').select('card_id, obtained_at').then(unwrap)
   ])
   const obtained = new Map(owned.map((o) => [o.card_id, o.obtained_at]))
@@ -207,7 +208,7 @@ export async function getProfile() {
 /** Extrae el token de lo que lea el escáner: URL `.../q/<token>` o el token suelto. */
 export function extractToken(text) {
   const value = String(text ?? '').trim()
-  const match = /\/q\/([A-Za-z0-9_-]+)\/?(?:[?#].*)?$/.exec(value)
+  const match = /\/q\/([A-Za-z0-9_-]{16,})\/?(?:[?#].*)?$/.exec(value)
   if (match) return match[1]
   return /^[A-Za-z0-9_-]{16,}$/.test(value) ? value : null
 }

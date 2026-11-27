@@ -10,6 +10,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { extractToken, redeemScan, MENSAJES_ESCANEO } from '../services/api.js'
 import { isSupabaseConfigured } from '../lib/supabase.js'
+import { consumePendingToken } from '../services/deeplink.js'
 
 // App.vue pasa `usuario` a todas las vistas; se declara para que no se renderice como atributo HTML
 defineProps({
@@ -60,6 +61,7 @@ const toggleLinterna = async () => {
 }
 
 const iniciarCamara = async () => {
+  if (desmontado) return
   try {
     const { default: QrScanner } = await import('qr-scanner')
     if (!(await QrScanner.hasCamera())) {
@@ -95,9 +97,13 @@ const onVisibilidad = () => {
   else scanner.start().catch(() => {})
 }
 
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('visibilitychange', onVisibilidad)
-  iniciarCamara()
+  // Llegada desde una placa QR (/q/<token>): se canjea primero y la cámara arranca después,
+  // para no pedir permiso de cámara a quien ya escaneó con la del teléfono.
+  const tokenEnlace = consumePendingToken()
+  const canjeado = tokenEnlace ? await procesarTexto(tokenEnlace) : false
+  if (!canjeado) iniciarCamara()
 })
 
 onBeforeUnmount(() => {
@@ -118,21 +124,21 @@ const obtenerPosicion = () =>
     )
   })
 
-/** Recibe el texto leído por la cámara o escrito a mano: URL `/q/<token>` o el token suelto. */
+/** Recibe el texto leído por la cámara o escrito a mano: URL `/q/<token>` o el token suelto. Devuelve true si se canjeó. */
 const procesarTexto = async (texto) => {
-  if (procesando.value) return
+  if (procesando.value) return false
   if (!isSupabaseConfigured) {
     setMensaje('Modo demo: configura .env para validar códigos reales.', 'info')
-    return
+    return false
   }
   const token = extractToken(texto)
   if (!token) {
     setMensaje('Este código no pertenece a La Ruta Blanca.', 'error')
-    return
+    return false
   }
   // La cámara lee el mismo QR varias veces por segundo: ignora repeticiones inmediatas
   const ahora = Date.now()
-  if (token === ultimoToken && ahora - ultimoTokenAt < 4000) return
+  if (token === ultimoToken && ahora - ultimoTokenAt < 4000) return false
   ultimoToken = token
   ultimoTokenAt = ahora
 
@@ -147,6 +153,7 @@ const procesarTexto = async (texto) => {
         nombre: res.site.name,
         puntos: res.points_earned
       })
+      return true
     } else if (res.result === 'already_owned') {
       setMensaje(`Ya descubriste ${res.site?.name ?? 'este lugar'}.`)
     } else if (res.result === 'too_far') {
@@ -155,10 +162,14 @@ const procesarTexto = async (texto) => {
       setMensaje(MENSAJES_ESCANEO[res.result] ?? 'No se pudo validar el código.', 'error')
     }
   } catch {
-    setMensaje('No pudimos validar el código. Revisa tu conexión e inténtalo de nuevo.', 'error')
+    // Deja el código escrito para reintentar con "Validar" sin volver a escanear
+    codigoManual.value = token
+    mostrarManual.value = true
+    setMensaje('No pudimos validar el código. Revisa tu conexión y pulsa Validar para reintentar.', 'error')
   } finally {
     procesando.value = false
   }
+  return false
 }
 
 const enviarCodigoManual = () => {
