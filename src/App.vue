@@ -2,35 +2,41 @@
 /**
  * App.vue
  * Layout contenedor principal de la aplicación móvil PWA "La Ruta Blanca" (Sucre, Bolivia).
- * Implementa Composition API con <script setup>, navegación dinámica mediante <component :is="...">,
- * gestión reactiva de estado desacoplada y soporte preparado para Firebase y Geolocation API.
+ * Orquesta las 4 vistas mediante renderizado dinámico <component :is="...">:
+ * - ExplorarView (Pantalla principal sin mapa, con Sabías que, Rutas y Museos Sueltos)
+ * - MapaView (Pestaña dedicada exclusivamente al mapa con ubicación de museos)
+ * - EscanerView (Visor inmersivo h-screen para códigos QR)
+ * - ColeccionView (Catálogo de cartas patrimoniales)
  */
 import { ref, computed } from 'vue'
 import HeaderNav from './components/HeaderNav.vue'
 import BottomNav from './components/BottomNav.vue'
-import MapaRutasView from './views/MapaRutasView.vue'
+import ExplorarView from './views/ExplorarView.vue'
+import MapaView from './views/MapaView.vue'
 import EscanerView from './views/EscanerView.vue'
 import ColeccionView from './views/ColeccionView.vue'
-import { USER_INITIAL_STATE, CARTAS_MOCK } from './data/mockData.js'
+import { USER_INITIAL_STATE, CARTAS_MOCK, MONUMENTOS_MOCK, MUSEOS_SUELTOS_MOCK } from './data/mockData.js'
 
-// Estado del explorador (Preparado para sincronizarse con Firebase Auth & Firestore)
 const usuario = ref({ ...USER_INITIAL_STATE })
 
-// Vista actual reactiva: 'mapa' | 'escaner' | 'coleccion'
-const vistaActual = ref('mapa')
+// Vista inicial: Pantalla principal Explorar (sin mapa)
+const vistaActual = ref('explorar')
 
-// Mapeo dinámico de vistas
+// Museo enfocado al abrir la pestaña Mapa desde Explorar o Rutas
+const museoEnMapa = ref(MONUMENTOS_MOCK[0])
+
 const vistas = {
-  mapa: MapaRutasView,
+  explorar: ExplorarView,
+  mapa: MapaView,
   escaner: EscanerView,
   coleccion: ColeccionView
 }
 
 const vistaComponente = computed(() => {
-  return vistas[vistaActual.value] || MapaRutasView
+  return vistas[vistaActual.value] || ExplorarView
 })
 
-// Notificación emergente / Toast para recompensas y desbloqueos
+// Notificación emergente / Toast para recompensas
 const toastMensaje = ref('')
 const toastVisible = ref(false)
 
@@ -42,15 +48,20 @@ const mostrarNotificacion = (mensaje) => {
   }, 3500)
 }
 
-/**
- * Manejador del escaneo exitoso de un código QR
- * Integra la lógica que en producción registrará el hallazgo en Firebase
- */
+const onLocateMuseum = (item) => {
+  const encontrado =
+    MUSEOS_SUELTOS_MOCK.find(m => m.id === item.id) ||
+    MONUMENTOS_MOCK.find(m => m.id === item.id) || {
+      ...item,
+      topPercent: item.topPercent || '45%',
+      leftPercent: item.leftPercent || '48%'
+    }
+  museoEnMapa.value = encontrado
+}
+
 const onScanSuccess = (datosQR) => {
-  // 1. Sumar puntaje al usuario
   usuario.value.puntos += datosQR.puntos || 150
 
-  // 2. Desbloquear carta en la colección
   const carta = CARTAS_MOCK.find(c => c.id === datosQR.id)
   if (carta && !carta.desbloqueada) {
     carta.desbloqueada = true
@@ -60,7 +71,6 @@ const onScanSuccess = (datosQR) => {
     mostrarNotificacion(`¡Patrimonio verificado: ${datosQR.nombre}! +${datosQR.puntos} PTS`)
   }
 
-  // 3. Redirigir suavemente a la colección para ver la nueva carta
   setTimeout(() => {
     vistaActual.value = 'coleccion'
   }, 1000)
@@ -73,9 +83,8 @@ const cambiarVista = (nuevaVista) => {
 </script>
 
 <template>
-  <div class="w-full min-h-screen bg-surface flex flex-col font-sans text-on-surface antialiased overflow-x-hidden">
-    <!-- Contenedor con ancho móvil estándar (Mobile First: max-w-md centrado en pantallas grandes) -->
-    <div class="w-full max-w-md mx-auto min-h-screen flex flex-col relative bg-surface shadow-2xl sm:border-x sm:border-surface-container">
+  <div class="w-full min-h-screen bg-[#F9FAFB] flex flex-col font-sans text-on-surface antialiased overflow-x-hidden">
+    <div class="w-full max-w-md mx-auto min-h-screen flex flex-col relative bg-[#F9FAFB] shadow-2xl sm:border-x sm:border-gray-100">
       
       <!-- Barra Superior: Oculta en Escáner para experiencia inmersiva h-screen -->
       <HeaderNav 
@@ -91,7 +100,7 @@ const cambiarVista = (nuevaVista) => {
         :class="[
           vistaActual === 'escaner' 
             ? 'p-0 h-[100dvh] overflow-hidden' 
-            : 'pt-16 pb-28 min-h-screen'
+            : 'pt-20 pb-24 min-h-screen'
         ]"
         role="main"
       >
@@ -99,7 +108,9 @@ const cambiarVista = (nuevaVista) => {
           <component 
             :is="vistaComponente"
             :usuario="usuario"
+            :museo-inicial="museoEnMapa"
             @navigate="cambiarVista"
+            @locate-museum="onLocateMuseum"
             @scan-success="onScanSuccess"
           />
         </Transition>
@@ -111,7 +122,7 @@ const cambiarVista = (nuevaVista) => {
         @update:current-view="cambiarVista"
       />
 
-      <!-- Toast de Notificaciones y Recompensas (Accesible con aria-live) -->
+      <!-- Toast de Notificaciones y Recompensas -->
       <Transition name="toast-slide">
         <div 
           v-if="toastVisible"
@@ -119,7 +130,7 @@ const cambiarVista = (nuevaVista) => {
           role="status"
           aria-live="polite"
         >
-          <div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+          <div class="w-8 h-8 rounded-full bg-crimson text-white flex items-center justify-center shrink-0">
             <span class="material-symbols-outlined text-[18px]" aria-hidden="true">stars</span>
           </div>
           <p class="text-xs font-semibold leading-snug flex-1">
@@ -133,7 +144,6 @@ const cambiarVista = (nuevaVista) => {
 </template>
 
 <style>
-/* Transición suave entre vistas de la aplicación */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -149,7 +159,6 @@ const cambiarVista = (nuevaVista) => {
   transform: translateY(-6px);
 }
 
-/* Transición para el toast de logros y recompensas */
 .toast-slide-enter-active,
 .toast-slide-leave-active {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);

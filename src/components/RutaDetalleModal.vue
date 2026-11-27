@@ -112,11 +112,11 @@ const emit = defineEmits(['close', 'locate-stop', 'scan-stop'])
           </div>
 
           <!-- Línea de Tiempo / Secuencia de Museos -->
-          <div class="flex flex-col gap-2.5 pb-2">
+          <div class="space-y-2.5 pb-2">
             <div 
               v-for="(museo, index) in ruta.museos" 
               :key="museo.id"
-              class="relative flex items-start gap-3 p-3 rounded-2xl bg-surface border border-surface-container shadow-2xs hover:border-primary-container/40 transition-colors"
+              class="shrink-0 relative flex items-start gap-3 p-3 rounded-2xl bg-surface border border-surface-container shadow-2xs hover:border-primary-container/40 transition-colors"
             >
               <!-- Número de Orden / Pin de Parada -->
               <div class="flex flex-col items-center shrink-0 mt-0.5">

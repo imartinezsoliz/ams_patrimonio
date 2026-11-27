@@ -17,6 +17,52 @@ export const USER_INITIAL_STATE = {
 }
 
 /**
+ * Tarjetas de Datos Curiosos ("Sabías que...") para el carrusel principal
+ */
+export const DATOS_CURIOSOS_MOCK = [
+  {
+    id: "dato-recoleta",
+    badge: "DATO DEL DÍA",
+    icono: "park",
+    textoPrefix: "¿Sabías que el milenario cedro de ",
+    textoDestacado: "La Recoleta",
+    textoSuffix: " tiene siglos de historia y custodia el mirador más icónico de la ciudad blanca?",
+    ubicacion: "Mirador de La Recoleta",
+    gradiente: "from-[#BA0C2F] via-[#8C0720] to-[#002855]"
+  },
+  {
+    id: "dato-casa-libertad",
+    badge: "HISTORIA VIVA",
+    icono: "history_edu",
+    textoPrefix: "El ",
+    textoDestacado: "Acta de la Independencia",
+    textoSuffix: " te espera en la Casa de la Libertad intacta desde su firma el 6 de agosto de 1825.",
+    ubicacion: "Plaza 25 de Mayo",
+    gradiente: "from-[#002855] via-[#103a6b] to-[#1E293B]"
+  },
+  {
+    id: "dato-glorieta",
+    badge: "REALEZA BOLIVIANA",
+    icono: "castle",
+    textoPrefix: "En el fabuloso ",
+    textoDestacado: "Castillo de La Glorieta",
+    textoSuffix: " vivieron Don Francisco y Doña Clotilde, los únicos príncipes en la historia de Bolivia.",
+    ubicacion: "Carretera a Yotala",
+    gradiente: "from-[#1E293B] via-[#4A0E17] to-[#BA0C2F]"
+  },
+  {
+    id: "dato-cal-orcko",
+    badge: "MUNDO CRETÁCICO",
+    icono: "pets",
+    textoPrefix: "El farallón de ",
+    textoDestacado: "Cal Orck'o",
+    textoSuffix: " alberga el yacimiento con huellas de dinosaurio más grande del planeta con más de 12.000 pisadas.",
+    ubicacion: "Parque Cretácico",
+    gradiente: "from-[#0F172A] via-[#002855] to-[#1E3A8A]"
+  }
+]
+
+/**
  * Catálogo completo de los 12 Museos Sueltos de Sucre
  */
 export const MUSEOS_SUELTOS_MOCK = [
@@ -32,6 +78,8 @@ export const MUSEOS_SUELTOS_MOCK = [
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuAvDj7w00yuM6MrDp97o1RJk3Mev-xafLPRrBCsbvd-r6RRGJ3LlEG0mckzysZghIWg3EQebTfv5nIrp54Z4gfs-_VMW_1RIR1UhbztwnC7roeNcqiE4Com0yqP3WeopfUDPfohexYXOF3p6E569UbYjI0o-u3gLnnTwvx-pUT0aD1EL55Obw5jtJCuidQDmFUUb1CUtGZiIhVNfW2-rZNBfvhibVENreAlNlDyIFA",
     descripcion: "Cuna de la patria boliviana. En su histórico Salón Virreinal se firmó el Acta de la Independencia en 1825 y alberga la galería de cuadros de los presidentes.",
     coordenadas: { lat: -19.0479, lng: -65.2596 },
+    topPercent: "38%",
+    leftPercent: "48%",
     horario: "Mar - Sáb: 09:00 - 16:30",
     qrCodigo: "RUTA-BLANCA-CDL-1825"
   },
@@ -47,6 +95,8 @@ export const MUSEOS_SUELTOS_MOCK = [
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuB4zd-nmKZzG9xa98LJUg1z342tmUMwZEmJe1D4AcCYGOarmCo_hjRo6Q3AXhSXZOlZ6ZE3DA9Lin0QLluJ-93qZunZfVxOq5I7Z1lx_klw893OcBJJ6doTZkcUK_QBHbnfEjVwC_tIRgP1Ks1-IM8fhTflauOsvObSRKM-siyVlFQ40lYFLQIL9SmmOruLculrEHSxhXIfrwTXFwjPAJ58QH5L3jrtEl9W0rcM3ug",
     descripcion: "Único principado de Bolivia, residencia de los Príncipes de La Glorieta con una asombrosa mezcla de estilos gótico, morisco, renacentista y bizantino.",
     coordenadas: { lat: -19.0911, lng: -65.2831 },
+    topPercent: "82%",
+    leftPercent: "22%",
     horario: "Mar - Dom: 09:00 - 16:30",
     qrCodigo: "RUTA-BLANCA-GLORIETA-1898"
   },
@@ -62,6 +112,8 @@ export const MUSEOS_SUELTOS_MOCK = [
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuDUA6whty5OmehKlWp2Tw95O6ncPDGdhnNJSP87-KfXOvdjxl6D5YTBBrpBCet048n5c4Z5_Vbo4GrvKXoxleq2wiqGdKthALv0XWtxwl9vRciffuzm7V_6ibwyFOorI3SqFEKRA0JsbeSHaPCXFrZ2TSlIOepNp0SsjnQ2Wi3KsTujQ5ITECdRwyNjGCY0ROuvRhom_r5chTjopGPd8HZbEA78US4U0BWtnoAMR4g",
     descripcion: "Exhibición de arte textil tradicional de las culturas Jalq'a y Tarabuco, mostrando cosmovisiones andinas con telares vivos y bordados ancestrales.",
     coordenadas: { lat: -19.0535, lng: -65.2534 },
+    topPercent: "29%",
+    leftPercent: "75%",
     horario: "Lun - Sáb: 08:30 - 18:00",
     qrCodigo: "RUTA-BLANCA-ASUR-1986"
   },
@@ -77,6 +129,8 @@ export const MUSEOS_SUELTOS_MOCK = [
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuA8muneXTSFIpSCVXoZKiuwDAYtpITENkStBmwdYeakpacSt8YXbOJ21B2_mhZ52jOKOZXWm0d9SCnKpaKh1ht-pTz34EztkHhmm3uEzddjFveLzpk9qXSZ_LxUlTuQtQuSdssavih3pTGX-g5yhY_LfwCHW9WBEYqThKUZ3onMElACKlaPggFitNTlDUxqrA2VcJyiix2fky0bLLfLnwSUMV5nDRCUYLB2J_LdPSk",
     descripcion: "Instalado en una señorial casona virreinal, custodia máscaras ceremoniales bolivianas, plumería sagrada, cerámica precolombina y numismática.",
     coordenadas: { lat: -19.0488, lng: -65.2605 },
+    topPercent: "52%",
+    leftPercent: "38%",
     horario: "Mar - Sáb: 09:00 - 17:00",
     qrCodigo: "RUTA-BLANCA-MUSEF-2004"
   },
@@ -92,6 +146,8 @@ export const MUSEOS_SUELTOS_MOCK = [
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuBFuzzo0uHbqHKIFqThvfbhLs8fwKBrpjpr8b9epNwT0-5xkQ7_rrWkGHQXOPEcgVPEhlnfxZK_biCUEz4g0KWm9XjgzXZkdG6XBRVdr8ObiO-jq3AmHH7P39pHSkwRsqPVqTzw-EMh8UwRZM_AZhdlmVeh6jd-OA74RHM61dLMT4O9YjVqjL7-HxUHcSgoVuRWu4FKD7qIUeXwpaxt6mfYyZH_CU8-KUuoXCvTc9U",
     descripcion: "Colección señorial de porcelanas de Sèvres, cristal de Baccarat, muebles virreinales de madera taraceada y lienzos de maestros europeos y coloniales.",
     coordenadas: { lat: -19.0475, lng: -65.2589 },
+    topPercent: "44%",
+    leftPercent: "54%",
     horario: "Lun - Vie: 08:30 - 16:30",
     qrCodigo: "RUTA-BLANCA-AGV-1945"
   },
@@ -107,6 +163,8 @@ export const MUSEOS_SUELTOS_MOCK = [
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuDj0qwOSE1Va28E5Hrx2kNZA9hr3TP1NkdaWrxEg8MjiOehQYd2EzPL2xin5pZMUVUFnQQNeKLE0beZC1Dwe7Qbb6yAkSW1iAwY_IUXT0aXhO1Rdi_UGqSQYRqlO6OdfSzJXw2EDJf020n7E9Zl1J_6ogBp62osOXeAJRAvLay4dSvXteE_9X-SAQ44NJ6YEbOBHfgsk6AYoh6_zk3NzfJbntM-v9-6oEf0-fVqHus",
     descripcion: "Tesoros litúrgicos más ricos de América del Sur. Custodia la imagen enjoyada de la Virgen de Guadalupe, orfebrería de plata potosina y custodias coloniales.",
     coordenadas: { lat: -19.0483, lng: -65.2601 },
+    topPercent: "50%",
+    leftPercent: "43%",
     horario: "Lun - Vie: 10:00 - 17:00",
     qrCodigo: "RUTA-BLANCA-CAT-1559"
   },
@@ -122,6 +180,8 @@ export const MUSEOS_SUELTOS_MOCK = [
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuDUA6whty5OmehKlWp2Tw95O6ncPDGdhnNJSP87-KfXOvdjxl6D5YTBBrpBCet048n5c4Z5_Vbo4GrvKXoxleq2wiqGdKthALv0XWtxwl9vRciffuzm7V_6ibwyFOorI3SqFEKRA0JsbeSHaPCXFrZ2TSlIOepNp0SsjnQ2Wi3KsTujQ5ITECdRwyNjGCY0ROuvRhom_r5chTjopGPd8HZbEA78US4U0BWtnoAMR4g",
     descripcion: "Convento franciscano de 1601 con claustros de naranjos centenarios, sillería tallada en cedro y una terraza panorámica con mirador a la ciudad.",
     coordenadas: { lat: -19.0531, lng: -65.2528 },
+    topPercent: "24%",
+    leftPercent: "79%",
     horario: "Lun - Sáb: 09:00 - 16:30",
     qrCodigo: "RUTA-BLANCA-REC-1601"
   },
@@ -137,6 +197,8 @@ export const MUSEOS_SUELTOS_MOCK = [
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuAvDj7w00yuM6MrDp97o1RJk3Mev-xafLPRrBCsbvd-r6RRGJ3LlEG0mckzysZghIWg3EQebTfv5nIrp54Z4gfs-_VMW_1RIR1UhbztwnC7roeNcqiE4Com0yqP3WeopfUDPfohexYXOF3p6E569UbYjI0o-u3gLnnTwvx-pUT0aD1EL55Obw5jtJCuidQDmFUUb1CUtGZiIhVNfW2-rZNBfvhibVENreAlNlDyIFA",
     descripcion: "Fundado en 1639 por las monjas clarisas. Exhibe pintura barroca mestiza de Bernardo Bitti y Melchor Pérez de Holguín, instrumentos de coro y criptas.",
     coordenadas: { lat: -19.0498, lng: -65.2575 },
+    topPercent: "58%",
+    leftPercent: "62%",
     horario: "Lun - Vie: 09:00 - 12:30, 15:00 - 17:30",
     qrCodigo: "RUTA-BLANCA-CLARA-1639"
   },
@@ -152,6 +214,8 @@ export const MUSEOS_SUELTOS_MOCK = [
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuCjpFCmwe14ldYgNVQEWbeqE4JhpZX2HGQf8EI8SWZWCyr3Tat0F1V8RCmzvrPnyh7f-ZoJKxEYK-HR91iPYW2AciHQspz6AtQsqgdzrU9WruH_UhKqRvPBfwTMy1fNJFYBiuxkC7PL_EHV-J7i1xzvt5iiFtum8bm_G-JCwnOlDrCDoSFhvYiLAIpY_8G_LV8DJHJxRF44x4bp_MZlPMgkxs7GYAFwCn4gEXACwKc",
     descripcion: "El farallón con más de 12.000 huellas de dinosaurios más grande del mundo. Incluye réplicas a escala real de titanosaurios y carnotauros.",
     coordenadas: { lat: -19.0062, lng: -65.2344 },
+    topPercent: "16%",
+    leftPercent: "20%",
     horario: "Mar - Dom: 09:00 - 17:00",
     qrCodigo: "RUTA-BLANCA-DINO-68M"
   },
@@ -167,6 +231,8 @@ export const MUSEOS_SUELTOS_MOCK = [
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuAhPaU2WUwsQ4lk5xEhglxgPqdGA3RKFf5foN06xZyXDiQLV0ILgsseml0ZDAc9rbwjQKhu5bWmdZazseSJwdvQNVbxuIAkJNTci0hXx-N4oDHdkbO42yx1mRaFjO9G9VQ5UK8OvNFQOt6HsORRdonvcKH0ubYf8_Hqr4Ro1TndeMInfEt6WG-QS5xIQLxrGe-zrs7l8dVzojBA160ej5qqRa5hxbCt8uduZXI2Afo",
     descripcion: "Antiguo tesoro real y casona virreinal que conserva lingotes, monedas de plata macuquinas de la Real Casa de Moneda y relicarios coloniales.",
     coordenadas: { lat: -19.0465, lng: -65.2612 },
+    topPercent: "31%",
+    leftPercent: "34%",
     horario: "Lun - Vie: 09:00 - 16:00",
     qrCodigo: "RUTA-BLANCA-TESORO-1770"
   },
@@ -182,6 +248,8 @@ export const MUSEOS_SUELTOS_MOCK = [
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuA8muneXTSFIpSCVXoZKiuwDAYtpITENkStBmwdYeakpacSt8YXbOJ21B2_mhZ52jOKOZXWm0d9SCnKpaKh1ht-pTz34EztkHhmm3uEzddjFveLzpk9qXSZ_LxUlTuQtQuSdssavih3pTGX-g5yhY_LfwCHW9WBEYqThKUZ3onMElACKlaPggFitNTlDUxqrA2VcJyiix2fky0bLLfLnwSUMV5nDRCUYLB2J_LdPSk",
     descripcion: "Homenaje a los legendarios hornos de leña coloniales y a las maestras panificadoras de Sucre, con la historia del pan de batalla, tantawawas y empanadas.",
     coordenadas: { lat: -19.0460, lng: -65.2620 },
+    topPercent: "27%",
+    leftPercent: "30%",
     horario: "Mar - Sáb: 09:00 - 18:00",
     qrCodigo: "RUTA-BLANCA-PAN-1910"
   },
@@ -197,6 +265,8 @@ export const MUSEOS_SUELTOS_MOCK = [
     imagen: "https://lh3.googleusercontent.com/aida-public/AB6AXuBFjsbvQizkh8eD2wbNOYYZc7u-GAhxK78XrLwC7jWoEQ0q8lwqsN3vyB0Gi4gpWarL5SILPDF0QsDt23JEs33vaTqvh9-kR1A61_j-gtnt7pEZ4DT-lqYrqOwycB38Dnox63BNRG-zUFvVtiDbzr8elhLTRoy7kIztJQgoXerPxM3MI2BLJ6KUufw5J1p6TFyGaFJlM1Hq59Jc-vkcBm5D5XX5sHhfZnl_Eaq7HTk",
     descripcion: "La tradición chocolatera de Sucre. Un recorrido interactivo desde la semilla de cacao silvestre amazónico hasta las famosas fábricas y bombones chuquisaqueños.",
     coordenadas: { lat: -19.0490, lng: -65.2585 },
+    topPercent: "64%",
+    leftPercent: "56%",
     horario: "Lun - Dom: 09:30 - 20:00",
     qrCodigo: "RUTA-BLANCA-CHOC-1896"
   }
